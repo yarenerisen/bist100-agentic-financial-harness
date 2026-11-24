@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.ipynb_checkpoints/
+
+# Data & artifacts
+data/raw/
+data/processed/
+*.parquet
+*.csv
+!eval/**/*.csv
+
+# Models & training outputs
+models/
+checkpoints/
+outputs/
+*.gguf
+*.safetensors
+*.bin
+wandb/
+
+# Audio (STT inputs)
+*.mp3
+*.wav
+
+# Env / secrets
+.env
+.env.*
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
