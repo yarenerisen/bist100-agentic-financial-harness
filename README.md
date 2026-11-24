@@ -175,7 +175,6 @@ bist100-agentic-financial-harness/
 git clone https://github.com/yarenerisen/bist100-agentic-financial-harness.git
 cd bist100-agentic-financial-harness
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 ## Team
