@@ -172,7 +172,7 @@ bist100-agentic-financial-harness/
 > 🚧 Work in progress
 
 ```bash
-git clone https://github.com/<user>/bist100-agentic-financial-harness.git
+git clone https://github.com/yarenerisen/bist100-agentic-financial-harness.git
 cd bist100-agentic-financial-harness
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
@@ -180,8 +180,8 @@ pip install -r requirements.txt
 
 ## Team
 
-- [@member-1](https://github.com/)
-- [@member-2](https://github.com/)
+- [@yarenerisen](https://github.com/yarenerisen)
+- [@cissygc](https://github.com/](https://github.com/cissygc)
 
 ## Disclaimer
 
