@@ -554,10 +554,145 @@ def edge_history(lang, split, tickers):
     return c.final("WATCH", ev, L(lang, "Descriptive statistics only; prices are adjusted for splits and dividends.", "Yalnızca betimsel istatistiktir; fiyatlar bölünme ve temettüye göre düzeltilmiştir."))
 
 
+
+# =============================================================== Extra tools: S/R, strategy variants, events, speech, index
+S6_Q = {"en": ["What are the main support and resistance levels for {t} between {a} and {b}? How often did price reverse at them?",
+               "Find support/resistance zones for {t} ({a} – {b}) with touch counts and reversal strength.",
+               "Is {t} trading near a historically reliable support level as of {b}?"],
+        "tr": ["{t} için {a} – {b} arasında ana destek ve direnç seviyeleri neler? Fiyat bu seviyelerde ne sıklıkla döndü?",
+               "{t} ({a} – {b}) için dokunma sayıları ve dönüş gücüyle destek/direnç bölgelerini bul.",
+               "{b} itibarıyla {t} tarihsel olarak güvenilir bir destek seviyesine yakın mı?"]}
+
+
+def s6_sr(lang, split, tickers):
+    t = rng.choice(tickers); a = rng.choice(["2024-01-01", "2025-01-01"]); b = rand_date("2025-06-02")
+    qt = rng.choice(S6_Q[lang][:2] if split == "train" else S6_Q[lang])
+    c = Conv(lang, qt.format(t=t, a=show_date(a, lang), b=show_date(b, lang)))
+    r = c.call("find_support_resistance", {"ticker": t, "start": a, "end": b})
+    if "error" in r:
+        return None
+    sup, res = r["nearest_supports"], r["nearest_resistances"]
+    if not sup and not res:
+        return c.final("INVESTIGATE", [L(lang, f"No level with at least two pivot touches was found for {t} in {r['period'][0]} to {r['period'][1]}.",
+                                         f"{r['period'][0]} – {r['period'][1]} döneminde {t} için en az iki pivot temaslı seviye bulunamadı.")],
+                       warn_text(lang, r["warnings"]))
+    def lv(x):
+        return L(lang, f"{x['type']} {F(x['level'])} (zone {F(x['zone'][0])}–{F(x['zone'][1])}, {F(x['distance_from_close_pct'])}% from close): {F(x['pivot_touches'])} pivot touches, last {x['last_pivot_date']}; {F(x['zone_touch_events'])} zone touches, reversal rate {F(x['reversal_rate_pct'])}% over {F(x['events_with_complete_window'])} complete events, strength score {F(x['strength_score'])}.",
+                 f"{'destek' if x['type'] == 'support' else 'direnç'} {F(x['level'])} (bölge {F(x['zone'][0])}–{F(x['zone'][1])}, kapanışa uzaklık %{F(x['distance_from_close_pct'])}): {F(x['pivot_touches'])} pivot teması, son {x['last_pivot_date']}; {F(x['zone_touch_events'])} bölge teması, {F(x['events_with_complete_window'])} tam olayda dönüş oranı %{F(x['reversal_rate_pct'])}, güç skoru {F(x['strength_score'])}.")
+    ev = [L(lang, f"Last close {F(r['last_close'])} on {r['period'][1]}.", f"{r['period'][1]} kapanışı {F(r['last_close'])}.")]
+    ev += [lv(x) for x in (sup[:2] + res[:2])]
+    s0 = sup[0] if sup else None
+    if s0 and abs(s0["distance_from_close_pct"]) <= 3 and s0["events_with_complete_window"] >= 10 and (s0["reversal_rate_pct"] or 0) >= 60:
+        state = "TECHNICAL_REVERSAL_CANDIDATE"
+        why = L(lang, "price is within 3% of a support that historically produced reversals in most touches", "fiyat, tarihsel olarak çoğu temasta dönüş üreten bir desteğe %3 yakınlıkta")
+    else:
+        state = "WATCH"
+        why = L(lang, "levels are descriptive; no support close to price with a reliable reversal history", "seviyeler betimseldir; fiyata yakın ve güvenilir dönüş geçmişi olan destek yok")
+    lim = " ".join(x for x in [L(lang, f"Conclusion: {why}.", f"Sonuç: {why}."), warn_text(lang, r["warnings"]),
+                               L(lang, "Pivots are confirmed only after 5 bars, so the most recent days cannot form new levels.",
+                                 "Pivotlar 5 bar sonra doğrulandığı için son günler yeni seviye oluşturamaz.")] if x)
+    return c.final(state, ev, lim)
+
+
+S7_Q = {"en": ["Compare strategy variants A–E for {lst}: in-sample {a} – {o0}, out-of-sample {o} – {b}. Does adding sector, fundamental and macro filters help after costs?",
+               "Preview the technical-only vs technical+sector+fundamental+macro strategy variants for {lst} with a walk-forward split at {o}."],
+        "tr": ["{lst} için strateji varyantlarını A–E karşılaştır: örneklem içi {a} – {o0}, örneklem dışı {o} – {b}. Sektör, temel ve makro filtreler maliyet sonrası fayda sağlıyor mu?",
+               "{lst} için sadece teknik ile teknik+sektör+temel+makro varyantlarını {o} tarihinde walk-forward ayrımıyla önizle."]}
+
+
+def s7_variants(lang, split, tickers):
+    pool = [x for x in tickers if x in REAL_FUND_TICKERS] or tickers
+    lst = rng.sample(pool, min(len(pool), rng.choice([3, 4, 5])))
+    a, o, b = "2024-01-01", rng.choice(["2025-07-01", "2026-01-01"]), CUT
+    o0 = str((pd.Timestamp(o) - pd.Timedelta(days=1)).date())
+    q = rng.choice(S7_Q[lang]).format(lst=", ".join(lst), a=show_date(a, lang), o0=show_date(o0, lang), o=show_date(o, lang), b=show_date(b, lang))
+    real_csv = macro_fund.FUND_CSV
+    macro_fund.FUND_CSV = SYN_FUND
+    try:
+        c = Conv(lang, q)
+        r = c.call("preview_strategy_variants", {"tickers": lst, "start": a, "end": b, "oos_start": o})
+    finally:
+        macro_fund.FUND_CSV = real_csv
+    if "error" in r:
+        return None
+    ev, best = [], None
+    for k, v in r["variants"].items():
+        if not v["available"]:
+            ev.append(L(lang, f"{k}: not available ({v.get('reason', 'insufficient inputs')}).", f"{k}: kullanılamıyor ({v.get('reason', 'yetersiz girdi')})."))
+            continue
+        i_, o_ = v["in_sample"], v["out_of_sample"]
+        ev.append(L(lang, f"{k} ({v['definition']}): in-sample {F(i_['trades'])} trades, cumulative {F(i_['cumulative_return_pct'])}%, Sharpe {F(i_['sharpe_ratio'])}; out-of-sample {F(o_['trades'])} trades, cumulative {F(o_['cumulative_return_pct'])}% vs buy-and-hold {F(o_['buy_and_hold_return_pct'])}% and XU100 {F(o_['xu100_return_pct'])}%.",
+                    f"{k} ({v['definition']}): örneklem içi {F(i_['trades'])} işlem, kümülatif %{F(i_['cumulative_return_pct'])}, Sharpe {F(i_['sharpe_ratio'])}; örneklem dışı {F(o_['trades'])} işlem, kümülatif %{F(o_['cumulative_return_pct'])}; buy-and-hold %{F(o_['buy_and_hold_return_pct'])}, XU100 %{F(o_['xu100_return_pct'])}."))
+        if o_["trades"] >= 10 and o_["cumulative_return_pct"] is not None and o_["buy_and_hold_return_pct"] is not None \
+                and o_["cumulative_return_pct"] > o_["buy_and_hold_return_pct"]:
+            best = k
+    any_power = any(v["available"] and v["out_of_sample"]["trades"] >= 10 for v in r["variants"].values())
+    if not any_power:
+        state, why = "INVESTIGATE", L(lang, "no variant has at least 10 out-of-sample trades", "hiçbir varyantın örneklem dışında en az 10 işlemi yok")
+    elif best:
+        state, why = "WATCH", L(lang, f"{best} beat buy-and-hold out of sample with at least 10 trades, but this is one walk-forward split", f"{best} örneklem dışında en az 10 işlemle buy-and-hold'u geçti, ancak bu tek bir walk-forward ayrımı")
+    else:
+        state, why = "REJECT_SIGNAL", L(lang, "no variant with enough trades beat buy-and-hold out of sample after costs", "yeterli işlemli hiçbir varyant maliyet sonrası örneklem dışında buy-and-hold'u geçmedi")
+    lim = " ".join(x for x in [L(lang, f"Conclusion: {why}.", f"Sonuç: {why}."), warn_text(lang, r["warnings"]),
+                               L(lang, "Each added filter reduces the number of trades; the rules were fixed before the out-of-sample period.",
+                                 "Her ek filtre işlem sayısını azaltır; kurallar örneklem dışı dönemden önce sabitlendi.")] if x)
+    return c.final(state, ev[:5], lim)
+
+
+S8_Q = {"en": ["Which official events (KAP financial disclosures, TCMB/FOMC rate decisions) are relevant for {t} between {a} and {b}?",
+               "List the timestamped disclosure and policy-rate events around {t} from {a} to {b}."],
+        "tr": ["{a} – {b} arasında {t} için hangi resmi olaylar (KAP finansal açıklamaları, TCMB/FOMC faiz kararları) önemli?",
+               "{t} çevresindeki zaman damgalı açıklama ve faiz kararı olaylarını {a} – {b} için listele."]}
+
+
+def s8_events(lang, split, tickers):
+    t = rng.choice([x for x in tickers if x in REAL_FUND_TICKERS] + tickers[:5])
+    a, b = rng.choice([("2025-01-01", CUT), ("2025-06-01", CUT), ("2024-01-01", "2025-12-31")])
+    c = Conv(lang, rng.choice(S8_Q[lang]).format(t=t, a=show_date(a, lang), b=show_date(b, lang)))
+    r = c.call("get_news_events", {"ticker": t, "start": a, "end": b})
+    if "error" in r:
+        return None
+    if not r["events"]:
+        return c.final("INVESTIGATE", [L(lang, f"No official events for {t} were found between {r['period'][0]} and {r['period'][1]}.", f"{r['period'][0]} – {r['period'][1]} arasında {t} için resmi olay bulunamadı.")],
+                       warn_text(lang, r["warnings"]))
+    cnt = ", ".join(f"{k} {F(v)}" for k, v in r["counts_by_type"].items())
+    ev = [L(lang, f"{F(r['total_events'])} events between {r['period'][0]} and {r['period'][1]}: {cnt}.", f"{r['period'][0]} – {r['period'][1]} arasında {F(r['total_events'])} olay: {cnt}.")]
+    ev += [f"{e['date']}: {e['headline']} ({e.get('source', '')})." for e in r["events"][-4:]]
+    lim = " ".join(x for x in [L(lang, "Events are contextual evidence with timestamps; they do not by themselves explain or predict price moves.",
+                                 "Olaylar zaman damgalı bağlamsal kanıttır; tek başlarına fiyat hareketini açıklamaz veya öngörmez."), warn_text(lang, r["warnings"])] if x)
+    return c.final("WATCH", ev, lim)
+
+
+def s9_speech(lang, split, tickers):
+    topic = rng.choice(["inflation", "rates", "valuation", "fx"])
+    q = L(lang, rng.choice([f"What did the approved finance commentators say about {topic}? Are their numeric claims verified?",
+                            f"Summarise expert commentary on {topic} from the instructor-approved videos."]),
+          rng.choice([f"Onaylı finans yorumcuları {topic} hakkında ne söyledi? Sayısal iddiaları doğrulanmış mı?",
+                      f"Hocanın onayladığı videolardan {topic} üzerine uzman yorumlarını özetle."]))
+    c = Conv(lang, q)
+    r = c.call("get_speech_features", {"topic": topic})
+    return c.final("INVESTIGATE", [L(lang, "The speech-intelligence layer returned no transcript segments for this topic.", "Konuşma analizi katmanı bu konu için transkript bölümü döndürmedi.")],
+                   L(lang, "No instructor-approved video transcripts are loaded, so expert commentary cannot be summarised; commentary would be contextual evidence, not ground truth. ",
+                     "Hocanın onayladığı video transkriptleri yüklü değil, bu yüzden uzman yorumu özetlenemiyor; yorumlar zaten doğrulanmış gerçek değil, bağlamsal kanıttır. ") + warn_text(lang, r["warnings"]))
+
+
+def s10_index(lang, split, tickers):
+    a, b = rng.choice([("2024-01-01", "2024-12-31"), ("2025-01-01", "2025-12-31"), ("2026-01-01", CUT), ("2024-01-01", CUT)])
+    q = L(lang, f"How did XU100 perform between {show_date(a, lang)} and {show_date(b, lang)}?", f"XU100 {show_date(a, lang)} – {show_date(b, lang)} arasında nasıl performans gösterdi?")
+    c = Conv(lang, q)
+    r = c.call("get_index_history", {"index": "XU100", "start": a, "end": b})
+    ev = [L(lang, f"XU100 moved from {F(r['first_close'])} to {F(r['last_close'])} between {r['period'][0]} and {r['period'][1]}: {F(r['total_return_pct'])}%.",
+            f"XU100 {r['period'][0]} – {r['period'][1]} arasında {F(r['first_close'])} seviyesinden {F(r['last_close'])} seviyesine geldi: %{F(r['total_return_pct'])}."),
+          L(lang, f"High {F(r['max_close'])} ({r['max_close_date']}), low {F(r['min_close'])} ({r['min_close_date']}), max drawdown {F(r['max_drawdown_pct'])}%, annualised volatility {F(r['annualised_volatility_pct'])}%.",
+            f"Zirve {F(r['max_close'])} ({r['max_close_date']}), dip {F(r['min_close'])} ({r['min_close_date']}), maksimum düşüş %{F(r['max_drawdown_pct'])}, yıllık oynaklık %{F(r['annualised_volatility_pct'])}.")]
+    return c.final("WATCH", ev, L(lang, "Descriptive index statistics in nominal TL.", "Nominal TL bazında betimsel endeks istatistikleri."))
+
+
 # =============================================================== main
-PLAN = {"train": [(s1, 260), (s2, 230), (s3, 260), (s4, 170), (None, 30), (s5, 120), (edge_future, 50), (edge_unknown, 25), (edge_history, 50)],
-        "val": [(s1, 20), (s2, 20), (s3, 20), (s4, 15), (s5, 10), (edge_future, 5), (edge_history, 5)],
-        "test": [(s1, 25), (s2, 25), (s3, 25), (s4, 20), (s5, 15), (edge_future, 5), (edge_unknown, 5)]}
+PLAN = {"train": [(s1, 260), (s2, 230), (s3, 260), (s4, 170), (None, 30), (s5, 120), (edge_future, 50), (edge_unknown, 25), (edge_history, 50),
+                  (s6_sr, 90), (s7_variants, 60), (s8_events, 50), (s9_speech, 20), (s10_index, 25)],
+        "val": [(s1, 20), (s2, 20), (s3, 20), (s4, 15), (s5, 10), (edge_future, 5), (edge_history, 5), (s6_sr, 6), (s7_variants, 4), (s8_events, 4)],
+        "test": [(s1, 25), (s2, 25), (s3, 25), (s4, 20), (s5, 15), (edge_future, 5), (edge_unknown, 5), (s6_sr, 8), (s7_variants, 5), (s8_events, 5), (s9_speech, 2), (s10_index, 3)]}
 
 
 ACCEPT = {"WATCH": 0.35, "REJECT_SIGNAL": 0.45, "INVESTIGATE": 0.7}

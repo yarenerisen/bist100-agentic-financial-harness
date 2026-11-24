@@ -7,8 +7,8 @@
 
 ## 1) Kurulum hücresi
 ```bash
-!cp -r /kaggle/input/*/bist_llm /kaggle/working/ 2>/dev/null || unzip -q /kaggle/input/*/bist_llm.zip -d /kaggle/working/
-%cd /kaggle/working/bist_llm
+!git clone -q https://github.com/yarenerisen/bist100-agentic-financial-harness.git /kaggle/working/repo
+%cd /kaggle/working/repo/bist_llm
 !pip install -q -U "transformers>=4.45" "peft>=0.13" "bitsandbytes>=0.44" accelerate pyarrow
 ```
 
@@ -61,6 +61,13 @@ ollama create bist-analyst -f Modelfile
 python -m harness.run_agent --backend openai --base-url http://127.0.0.1:11434/v1 --model bist-analyst "..."
 ```
 Not: Ollama GGUF'un içindeki Qwen sohbet şablonunu kullanır; harness araç sonuçlarını `<tool_response>` ile sardığı için eğitimdeki formatla aynıdır.
+
+## 6b) Harness deneyleri A–E (proje dokümanı Bölüm 30, rapor tablosu)
+Aynı model, farklı harness seviyeleri: A = ham LLM (veri metin olarak), B = araçlı, C = durum makinesi, D = kanıt ve kalite kapısı, E = hafıza ve insan onayı.
+```bash
+for m in A B C D E; do python -m harness.evaluate --backend hf --model /kaggle/working/bist-lora-merged --mode $m --limit 40 --tag ft_$m; done
+for m in A B D; do python -m harness.evaluate --backend hf --model Qwen/Qwen2.5-7B-Instruct --mode $m --limit 40 --tag base_$m; done
+```
 
 ## 7) Demo (canlı test)
 ```bash

@@ -9,11 +9,14 @@ data/      prices.parquet (76 BIST stocks + XU100 + USDTRY/EURTRY, 2023-06 → 2
 tools/     core.py (data, sector ranking, catch-up event study, weekday & multi-day patterns, indicators)
            events.py (11 technical event families + regime breakdown), backtest.py (Sharpe, MDD, B&H, XU100, costs)
            macro_fund.py (macro context, point-in-time fundamentals, post-disclosure abnormal returns)
-           quality.py (data-quality gate), registry.py (11 MCP-style tools: validation, look-ahead block, compact output)
-training/  prompts.py (system prompt), generate_dataset.py → train/val/test.jsonl (1,195 / 95 / 120),
+           quality.py (data-quality gate), levels.py (support/resistance), context.py (official event calendar, speech features)
+           registry.py (16 MCP-style tools: validation, look-ahead block, compact output)
+training/  prompts.py (system prompt), generate_dataset.py → train/val/test.jsonl (1,440 / 109 / 143),
            labeling_rules.md, finetune_qlora.py, RUN_ON_KAGGLE.md
-harness/   run_agent.py (state machine, tool execution, quality gate, answer validation, human review, decision log, replay)
+harness/   run_agent.py (state machine, tool execution, quality gate, answer validation, human review, decision log, replay,
+           ablation modes A–E), evidence.py (observed context vs committed evidence), memory.py (episodic memory, SQLite)
            validate.py (numeric hallucination / format / action-space / advice checks), evaluate.py (Section 30 metrics)
+research/  run_scenarios.py → docs/results/*.md (scenario reports), plot_signals.py → docs/figures/*.png
 ```
 
 ## Quick commands (from `bist_llm/`)
@@ -22,6 +25,10 @@ python -m training.generate_dataset                    # rebuild training data f
 python -m harness.evaluate --backend replay            # pipeline sanity check (oracle answers → all metrics perfect)
 python -m harness.run_agent --backend openai "..."     # ask the local model (llama.cpp / Ollama server)
 python -m harness.run_agent --replay logs/<id>.json    # reproducibility check of a logged analysis
+python -m harness.run_agent --bundle logs/<id>.json    # evidence bundle of a logged analysis
+python -m harness.evaluate --backend openai --mode C   # harness ablation A..E (Section 30)
+python -m research.run_scenarios                       # regenerate docs/results/ (~30 s)
+python -m research.plot_signals ASELS lower_bollinger_touch   # chart → docs/figures/
 ```
 Python: `pip install pandas pyarrow numpy yfinance` (tools) + `transformers peft bitsandbytes accelerate` (training).
 
@@ -43,5 +50,6 @@ Python: `pip install pandas pyarrow numpy yfinance` (tools) + `transformers peft
   net debt includes lease liabilities; CCOLA 2024Q4 income statement is unreadable (garbled font) and is omitted.
   AKBNK (bank) is excluded: EBITDA-based ratios are not meaningful for banks.
 - TÜİK CPI not loaded; TCMB/Fed rate files should be re-verified against official tables.
-- News / speech-intelligence layer not implemented.
+- News layer = official timestamped events only (KAP disclosures, TCMB/FOMC); no licensed news feed. Speech pipeline exists
+  (`data/speech_pipeline.py`, local Whisper) but no instructor-approved videos are loaded yet; strategy variant E is unavailable.
 - Event studies are in-sample; few events for combined conditions → low statistical power (always reported).

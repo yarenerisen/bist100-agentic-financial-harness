@@ -2,7 +2,7 @@
 and returns JSON-serialisable dicts. Errors are returned as {"error": CODE, "message": ...}, never raised."""
 import json, re
 import pandas as pd
-from . import core, macro_fund, events, backtest, quality
+from . import core, macro_fund, events, backtest, quality, levels, context
 from .core import CUTOFF
 
 DATE = {"type": "string", "description": "YYYY-MM-DD, must be <= 2026-09-10"}
@@ -52,8 +52,25 @@ def _backtest(strategy, sector=None, tickers=None, start="2024-01-01", end="2026
 
 STRATEGIES = ["sector_catch_up", "weekday_mon_wed_down"] + sorted(events.EVENTS)
 
+def _index_history(index="XU100", start="2024-01-01", end="2026-09-10"):
+    if index.upper() not in ("XU100", "USDTRY", "EURTRY"):
+        raise ValueError("index must be XU100 (USDTRY/EURTRY also accepted)")
+    r = core.get_stock_history(index.upper(), start, end)
+    r["tool"] = "get_index_history"; r["index"] = r.pop("ticker"); r.pop("sector", None); r.pop("zero_volume_days", None)
+    return r
+
+
 TOOLS = {
     "get_stock_history": (core.get_stock_history, {"ticker": TICKER, "start": DATE, "end": DATE}, ["ticker"]),
+    "get_index_history": (_index_history, {"index": {"type": "string", "enum": ["XU100", "USDTRY", "EURTRY"]}, "start": DATE, "end": DATE}, []),
+    "find_support_resistance": (levels.find_support_resistance, {"ticker": TICKER, "start": DATE, "end": DATE,
+                                                                 "tolerance_pct": {"type": "number", "default": 1.5},
+                                                                 "pivot_window": {"type": "integer", "default": 5}}, ["ticker"]),
+    "preview_strategy_variants": (backtest.preview_strategy_variants, {"tickers": TICKERS, "start": DATE, "end": DATE, "oos_start": DATE,
+                                                                       "hold_days": {"type": "integer", "default": 5}}, ["tickers"]),
+    "get_news_events": (context.get_news_events, {"ticker": TICKER, "topic": {"type": "string", "enum": ["earnings", "rates"]},
+                                                  "start": DATE, "end": DATE}, []),
+    "get_speech_features": (context.get_speech_features, {"source_id": {"type": "string"}, "topic": {"type": "string"}, "ticker": TICKER}, []),
     "rank_sector_relative_strength": (core.rank_sector_relative_strength, {"sector": SECTOR, "horizon": {"type": "integer", "default": 20}, "as_of": DATE}, ["sector"]),
     "run_backtest": (_backtest, {"strategy": {"type": "string", "enum": STRATEGIES}, "sector": SECTOR, "tickers": TICKERS,
                                  "start": DATE, "end": DATE, "lag_window": {"type": "integer", "default": 20},
@@ -77,6 +94,11 @@ TOOLS = {
                                                         "need_macro": {"type": "boolean", "default": False}}, ["tickers"]),
 }
 DESCRIPTIONS = {
+    "get_index_history": "XU100 (or USDTRY/EURTRY) summary: return, high/low, volatility, max drawdown.",
+    "find_support_resistance": "Support/resistance levels from clustered pivots: zone, touches, recency, reversal rate after zone touches.",
+    "preview_strategy_variants": "Strategy variants A (technical) .. D (technical+sector+fundamental+macro), E (news, unavailable) with identical costs; in-sample vs out-of-sample.",
+    "get_news_events": "Timestamped official events: KAP financial-report disclosures, TCMB/FOMC rate decisions (contextual only).",
+    "get_speech_features": "Transcript-derived topics/claims/stance from instructor-approved finance videos (if loaded).",
     "get_stock_history": "Price summary for one stock: first/last close, total return, high/low, volatility, max drawdown.",
     "rank_sector_relative_strength": "Ranks stocks in a sector by return over the last `horizon` trading days vs the sector median and XU100; flags whether the sector is strong; adds Supertrend/KAMA state.",
     "run_backtest": "Historical verification. sector_catch_up = event study of laggards (hit rate, false positives over 5/10/20d) + portfolio backtest; other strategies = trade backtest with Sharpe, max drawdown, win rate vs buy-and-hold and XU100.",
@@ -91,7 +113,7 @@ DESCRIPTIONS = {
 }
 TOOL_SPECS = [{"name": n, "description": DESCRIPTIONS[n], "parameters": {"type": "object", "properties": p, "required": r}}
               for n, (_, p, r) in TOOLS.items()]
-DATE_KEYS = {"start", "end", "as_of"}
+DATE_KEYS = {"start", "end", "as_of", "oos_start"}
 
 
 def _err(tool, msg, code="INVALID_CALL"):

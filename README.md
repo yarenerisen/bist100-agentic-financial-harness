@@ -156,20 +156,15 @@ handling are documented in `docs/`.
 ```
 bist100-agentic-financial-harness/
 ├── bist_llm/
-│   ├── data/
-│   │   ├── download_prices.py   # fetches OHLCV for the universe + XU100, USDTRY, EURTRY
-│   │   └── prices.parquet       # generated locally, not committed
-│   ├── tools/
-│   │   ├── core.py              # deterministic analysis tools
-│   │   └── registry.py          # TOOL_SPECS (JSON schemas) + call_tool(name, args)
-│   ├── training/
-│   │   ├── generate_dataset.py  # builds train/val/test JSONL from real tool outputs
-│   │   ├── labeling_rules.md    # thresholds that map evidence to analytical states
-│   │   └── evaluate.py          # base vs fine-tuned metrics
-│   └── harness/
-│       └── run_agent.py         # inference loop: validate tool calls, run tools, check answers, log
-├── notebooks/                   # Kaggle / Colab fine-tuning notebooks
-└── docs/                        # methodology, data dictionary, universe
+│   ├── data/        prices.parquet, fundamentals.csv (from KAP report PDFs), policy/Fed rate files,
+│   │                download_prices.py, parse_financials.py, speech_pipeline.py
+│   ├── tools/       core, events, backtest, levels, macro_fund, context, quality + registry.py (16 MCP-style tools)
+│   ├── training/    prompts.py, generate_dataset.py, train/val/test.jsonl, labeling_rules.md,
+│   │                finetune_qlora.py, RUN_ON_KAGGLE.md
+│   ├── harness/     run_agent.py (stateful loop, modes A–E), validate.py, evidence.py, memory.py, evaluate.py
+│   └── research/    run_scenarios.py (scenario reports), plot_signals.py (charts)
+├── notebooks/       Kaggle / Colab fine-tuning notebooks
+└── docs/            data_dictionary.md, universe.md, results/ (scenario reports), figures/
 ```
 
 ## Quick start
@@ -181,8 +176,11 @@ git clone https://github.com/yarenerisen/bist100-agentic-financial-harness.git
 cd bist100-agentic-financial-harness
 python -m venv .venv && source .venv/bin/activate
 pip install yfinance pandas pyarrow
-python bist_llm/data/download_prices.py
+cd bist_llm
+python -m research.run_scenarios          # scenario reports → docs/results/
+python -m harness.evaluate --backend replay   # pipeline check
 ```
+Training and local inference: see `bist_llm/training/RUN_ON_KAGGLE.md`.
 
 ## Team
 
