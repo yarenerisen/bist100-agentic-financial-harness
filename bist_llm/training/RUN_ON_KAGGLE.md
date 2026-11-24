@@ -1,5 +1,7 @@
 # Eğitim ve çalıştırma adımları (Kişi B)
 
+> **Kaggle hesabı yoksa:** Google Colab kullan. `notebooks/colab_finetune.ipynb` dosyasını Colab'da aç (File → Open notebook → GitHub sekmesi → repo linki) ve hücreleri sırayla çalıştır. Kesinti olursa `--resume` ile kaldığı yerden devam eder.
+
 ## 0) Kaggle hazırlığı
 1. kaggle.com → hesap → **telefon doğrula** (GPU için şart).
 2. New Notebook → sağ panel: *Accelerator* = **GPU T4 x2** (veya P100), *Internet* = **On**.

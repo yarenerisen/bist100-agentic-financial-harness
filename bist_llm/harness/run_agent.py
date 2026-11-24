@@ -48,11 +48,23 @@ class OpenAIBackend:
 
 
 class HFBackend:
-    def __init__(self, path):
+    def __init__(self, path, load_4bit=False):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
-        self.tok = AutoTokenizer.from_pretrained(path)
-        self.model = AutoModelForCausalLM.from_pretrained(path, torch_dtype="auto", device_map="auto")
+        kw = {}
+        if load_4bit:   # fits a 7B model on a 16 GB T4
+            from transformers import BitsAndBytesConfig
+            kw["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16)
+        adapter = Path(path) / "adapter_config.json"
+        if adapter.exists():   # LoRA adapter directory: load base model + adapter without merging
+            from peft import PeftModel
+            base = json.loads(adapter.read_text())["base_model_name_or_path"]
+            self.tok = AutoTokenizer.from_pretrained(path)
+            self.model = PeftModel.from_pretrained(AutoModelForCausalLM.from_pretrained(base, torch_dtype=torch.float16, device_map="auto", **kw), path)
+        else:
+            self.tok = AutoTokenizer.from_pretrained(path)
+            self.model = AutoModelForCausalLM.from_pretrained(path, torch_dtype=torch.float16, device_map="auto", **kw)
+        self.model.eval()
         self.torch = torch
 
     def chat(self, messages):
@@ -221,12 +233,13 @@ if __name__ == "__main__":
     ap.add_argument("--replay", help="re-run tool calls of a decision log and check reproducibility")
     ap.add_argument("--bundle", help="print the evidence bundle of a decision log")
     ap.add_argument("--mode", default="E", choices=list(MODES), help="harness ablation level (default E = full harness)")
+    ap.add_argument("--load-4bit", action="store_true", help="hf backend: load the model in 4-bit (7B on a T4)")
     a = ap.parse_args()
     if a.replay:
         print(json.dumps(replay_log(a.replay), indent=1)); sys.exit()
     if a.bundle:
         print(json.dumps(json.loads(Path(a.bundle).read_text()).get("evidence_bundle"), indent=1, ensure_ascii=False)); sys.exit()
-    be = OpenAIBackend(a.base_url, a.model, a.allow_remote) if a.backend == "openai" else HFBackend(a.model)
+    be = OpenAIBackend(a.base_url, a.model, a.allow_remote) if a.backend == "openai" else HFBackend(a.model, a.load_4bit)
     q = a.question or input("Question: ")
     tr = run(q, be, review=a.review, mode=a.mode)
     print("\n" + tr["answer"])

@@ -24,6 +24,9 @@ ap.add_argument("--alpha", type=int, default=32)
 ap.add_argument("--grad-accum", type=int, default=16)
 ap.add_argument("--limit", type=int, default=0, help="use only N training rows (smoke test)")
 ap.add_argument("--merge", action="store_true", help="merge LoRA adapter into fp16 weights (for GGUF export)")
+ap.add_argument("--merged-out", default=None, help="where to write the merged model (default: <out>-merged)")
+ap.add_argument("--resume", action="store_true", help="continue from the last checkpoint in --out (e.g. after a Colab disconnect)")
+ap.add_argument("--save-steps", type=int, default=20, help="checkpoint every N optimizer steps")
 a = ap.parse_args()
 
 import torch
@@ -37,8 +40,9 @@ if a.merge:
     from peft import PeftModel
     base = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=torch.float16, device_map="cpu")
     m = PeftModel.from_pretrained(base, a.out).merge_and_unload()
-    m.save_pretrained(a.out + "-merged", safe_serialization=True); tok.save_pretrained(a.out + "-merged")
-    print("merged ->", a.out + "-merged"); raise SystemExit
+    dst = a.merged_out or a.out + "-merged"
+    m.save_pretrained(dst, safe_serialization=True); tok.save_pretrained(dst)
+    print("merged ->", dst); raise SystemExit
 
 
 def _ids(messages, gen=False):
@@ -90,13 +94,15 @@ model.print_trainable_parameters()
 args = TrainingArguments(
     output_dir=a.out, num_train_epochs=a.epochs, per_device_train_batch_size=1, per_device_eval_batch_size=1,
     gradient_accumulation_steps=a.grad_accum, learning_rate=a.lr, lr_scheduler_type="cosine", warmup_ratio=0.05,
-    logging_steps=5, eval_strategy="steps", eval_steps=40, save_strategy="steps", save_steps=40, save_total_limit=2,
+    logging_steps=5, eval_strategy="steps", eval_steps=a.save_steps, save_strategy="steps", save_steps=a.save_steps, save_total_limit=2,
     load_best_model_at_end=True, metric_for_best_model="eval_loss", bf16=bf16, fp16=not bf16,
     gradient_checkpointing=True, optim="paged_adamw_8bit", report_to="none", group_by_length=True, seed=42)
 t0 = time.time()
 trainer = Trainer(model=model, args=args, train_dataset=train, eval_dataset=val,
                   data_collator=DataCollatorForSeq2Seq(tok, padding=True, label_pad_token_id=-100))
-trainer.train()
+import glob
+last = sorted(glob.glob(os.path.join(a.out, "checkpoint-*")), key=lambda p: int(p.rsplit("-", 1)[1]))
+trainer.train(resume_from_checkpoint=last[-1] if (a.resume and last) else None)
 trainer.save_model(a.out); tok.save_pretrained(a.out)
 hist = {"base_model": a.model, "train_examples": len(train), "val_examples": len(val), "epochs": a.epochs, "lr": a.lr,
         "lora_rank": a.rank, "lora_alpha": a.alpha, "grad_accum": a.grad_accum, "max_len": a.max_len,

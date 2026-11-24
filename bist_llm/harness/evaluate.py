@@ -70,6 +70,8 @@ if __name__ == "__main__":
     ap.add_argument("--repeats", type=int, default=1, help="run each question N times to measure reproducibility")
     ap.add_argument("--tag", default=None)
     ap.add_argument("--mode", default="E", choices=list("ABCDE"), help="harness ablation level (Section 30)")
+    ap.add_argument("--load-4bit", action="store_true", help="hf backend: load the model in 4-bit (7B on a T4)")
+    ap.add_argument("--out-dir", default=None, help="where to write eval_<tag>.json (e.g. a Google Drive folder)")
     ap.add_argument("--allow-remote", action="store_true")
     ap.add_argument("--real-fundamentals", action="store_true",
                     help="use data/fundamentals.csv instead of the synthetic file the test set was generated with")
@@ -82,7 +84,7 @@ if __name__ == "__main__":
     if a.backend == "replay":
         fac = lambda row: ReplayBackend(row)
     else:
-        be = OpenAIBackend(a.base_url, a.model, a.allow_remote) if a.backend == "openai" else HFBackend(a.model)
+        be = OpenAIBackend(a.base_url, a.model, a.allow_remote) if a.backend == "openai" else HFBackend(a.model, a.load_4bit)
         fac = lambda row: be
     res = []
     for i, r in enumerate(rows, 1):
@@ -94,7 +96,8 @@ if __name__ == "__main__":
     for sc in sorted({r["scenario"] for r in res}):
         by[sc] = summarize([r for r in res if r["scenario"] == sc])
     out = {"tag": a.tag or f"{a.backend}_{a.mode}", "mode": a.mode, "model": a.model, "time": time.strftime("%Y-%m-%d %H:%M"), "overall": s, "by_scenario": by, "rows": res}
-    Path(ROOT / "results").mkdir(exist_ok=True)
-    p = ROOT / "results" / f"eval_{out['tag']}.json"
+    rdir = Path(a.out_dir) if a.out_dir else ROOT / "results"
+    rdir.mkdir(parents=True, exist_ok=True)
+    p = rdir / f"eval_{out['tag']}.json"
     p.write_text(json.dumps(out, ensure_ascii=False, indent=1))
     print("\n" + json.dumps(s, indent=1)); print("saved", p)
