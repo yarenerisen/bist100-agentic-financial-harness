@@ -27,6 +27,8 @@ ap.add_argument("--merge", action="store_true", help="merge LoRA adapter into fp
 ap.add_argument("--merged-out", default=None, help="where to write the merged model (default: <out>-merged)")
 ap.add_argument("--resume", action="store_true", help="continue from the last checkpoint in --out (e.g. after a Colab disconnect)")
 ap.add_argument("--save-steps", type=int, default=20, help="checkpoint every N optimizer steps")
+ap.add_argument("--liger", action="store_true", help="fused linear+cross-entropy (pip install liger-kernel): avoids materialising "
+                "the 152k-vocab logits, needed for long sequences on 8 GB GPUs")
 a = ap.parse_args()
 
 import torch
@@ -80,6 +82,10 @@ def load(split):
 
 
 train, val = load("train"), load("val")
+if a.liger:
+    from liger_kernel.transformers import apply_liger_kernel_to_qwen2
+    apply_liger_kernel_to_qwen2(rope=True, rms_norm=True, swiglu=True, fused_linear_cross_entropy=True, cross_entropy=False)
+    print("liger kernels applied")
 bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
 model = AutoModelForCausalLM.from_pretrained(
     a.model, device_map="auto", torch_dtype=torch.bfloat16 if bf16 else torch.float16,
@@ -91,15 +97,33 @@ model = get_peft_model(model, LoraConfig(r=a.rank, lora_alpha=a.alpha, lora_drop
                                          target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]))
 model.print_trainable_parameters()
 
-args = TrainingArguments(
+import inspect
+_ta = inspect.signature(TrainingArguments.__init__).parameters      # works on transformers 4.x and 5.x
+kw = dict(
     output_dir=a.out, num_train_epochs=a.epochs, per_device_train_batch_size=1, per_device_eval_batch_size=1,
-    gradient_accumulation_steps=a.grad_accum, learning_rate=a.lr, lr_scheduler_type="cosine", warmup_ratio=0.05,
+    gradient_accumulation_steps=a.grad_accum, learning_rate=a.lr, lr_scheduler_type="cosine",
     logging_steps=5, eval_strategy="steps", eval_steps=a.save_steps, save_strategy="steps", save_steps=a.save_steps, save_total_limit=2,
     load_best_model_at_end=True, metric_for_best_model="eval_loss", bf16=bf16, fp16=not bf16,
-    gradient_checkpointing=True, optim="paged_adamw_8bit", report_to="none", group_by_length=True, seed=42)
+    gradient_checkpointing=True, optim="paged_adamw_8bit", report_to="none", seed=42)
+if "warmup_ratio" in _ta:
+    kw["warmup_ratio"] = 0.05
+else:
+    kw["warmup_steps"] = 0.05          # v5: a float < 1 is a ratio of total steps
+if "group_by_length" in _ta:
+    kw["group_by_length"] = True
+args = TrainingArguments(**kw)
 t0 = time.time()
+class Collator(DataCollatorForSeq2Seq):
+    """With Liger, also skip logits in evaluation so the 152k-vocab logits are never materialised."""
+    def __call__(self, features, return_tensors=None):
+        b = super().__call__(features, return_tensors)
+        if a.liger:
+            b["skip_logits"] = True
+        return b
+
+
 trainer = Trainer(model=model, args=args, train_dataset=train, eval_dataset=val,
-                  data_collator=DataCollatorForSeq2Seq(tok, padding=True, label_pad_token_id=-100))
+                  data_collator=Collator(tok, padding=True, label_pad_token_id=-100))
 import glob
 last = sorted(glob.glob(os.path.join(a.out, "checkpoint-*")), key=lambda p: int(p.rsplit("-", 1)[1]))
 trainer.train(resume_from_checkpoint=last[-1] if (a.resume and last) else None)

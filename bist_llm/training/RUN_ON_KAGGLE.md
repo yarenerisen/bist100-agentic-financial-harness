@@ -11,7 +11,7 @@
 ```bash
 !git clone -q https://github.com/yarenerisen/bist100-agentic-financial-harness.git /kaggle/working/repo
 %cd /kaggle/working/repo/bist_llm
-!pip install -q -U "transformers>=4.45" "peft>=0.13" "bitsandbytes>=0.44" accelerate pyarrow
+!pip install -q -U "transformers>=4.45" "peft>=0.13" "bitsandbytes>=0.44" accelerate pyarrow liger-kernel
 ```
 
 ## 2) Önce BASE modeli test et (raporda "base vs fine-tuned" karşılaştırması için zorunlu)
@@ -23,9 +23,10 @@ Sonuç: `results/eval_base.json`
 ## 3) Duman testi (5 dk) → sonra asıl eğitim
 ```bash
 !python training/finetune_qlora.py --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora --limit 30 --epochs 1
-!python training/finetune_qlora.py --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora --epochs 2
+!python training/finetune_qlora.py --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora --epochs 2 --liger
 ```
 - Süre tahmini T4'te: 7B için epoch başına ~1–1.5 saat. Zaman sıkışırsa `--model Qwen/Qwen2.5-3B-Instruct`.
+- `--liger`: 152 bin kelimelik çıktı katmanını belleğe açmadan kaybı hesaplar. 8 GB'lık GPU'larda 6 bin tokenlık örnekler için gerekli (RTX 4070 Laptop'ta test edildi: 3B, bf16, eğitim + eval sığıyor, ~4-5 s/örnek).
 - Bellek hatası (OOM) olursa: `--max-len 4096` (uzun örnekler atlanır, kaç tane atlandığı yazdırılır).
 - `training_report.json` → loss eğrisi ve ayarlar (rapora koy).
 
