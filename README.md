@@ -155,16 +155,21 @@ handling are documented in `docs/`.
 
 ```
 bist100-agentic-financial-harness/
-├── data/            # raw & processed datasets (not committed)
-├── src/bist_harness/
-│   ├── data/        # loaders, cleaning, point-in-time alignment
-│   ├── tools/       # deterministic analysis tools (exposed via MCP)
-│   ├── harness/     # state machine, evidence store, gates, memory, replay
-│   └── llm/         # local inference wrappers
-├── finetune/        # dataset builder, LoRA/QLoRA configs, training
-├── eval/            # test questions, metrics, ablation runs
-├── notebooks/       # exploration
-└── docs/            # methodology, data dictionary, universe
+├── bist_llm/
+│   ├── data/
+│   │   ├── download_prices.py   # fetches OHLCV for the universe + XU100, USDTRY, EURTRY
+│   │   └── prices.parquet       # generated locally, not committed
+│   ├── tools/
+│   │   ├── core.py              # deterministic analysis tools
+│   │   └── registry.py          # TOOL_SPECS (JSON schemas) + call_tool(name, args)
+│   ├── training/
+│   │   ├── generate_dataset.py  # builds train/val/test JSONL from real tool outputs
+│   │   ├── labeling_rules.md    # thresholds that map evidence to analytical states
+│   │   └── evaluate.py          # base vs fine-tuned metrics
+│   └── harness/
+│       └── run_agent.py         # inference loop: validate tool calls, run tools, check answers, log
+├── notebooks/                   # Kaggle / Colab fine-tuning notebooks
+└── docs/                        # methodology, data dictionary, universe
 ```
 
 ## Quick start
@@ -175,12 +180,14 @@ bist100-agentic-financial-harness/
 git clone https://github.com/yarenerisen/bist100-agentic-financial-harness.git
 cd bist100-agentic-financial-harness
 python -m venv .venv && source .venv/bin/activate
+pip install yfinance pandas pyarrow
+python bist_llm/data/download_prices.py
 ```
 
 ## Team
 
 - [@yarenerisen](https://github.com/yarenerisen)
-- [@cissygc](https://github.com/](https://github.com/cissygc)
+- [@cissygc](https://github.com/cissygc)
 
 ## Disclaimer
 

@@ -6,17 +6,19 @@ venv/
 *.egg-info/
 .ipynb_checkpoints/
 
-# Data & artifacts
-data/raw/
-data/processed/
+# Data (regenerate with bist_llm/data/download_prices.py)
 *.parquet
-*.csv
-!eval/**/*.csv
+
+# Harness decision logs
+bist_llm/harness/logs/
+logs/
 
 # Models & training outputs
 models/
 checkpoints/
 outputs/
+lora_adapter*/
+merged_model*/
 *.gguf
 *.safetensors
 *.bin
