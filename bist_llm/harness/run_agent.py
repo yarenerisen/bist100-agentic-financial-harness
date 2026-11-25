@@ -39,7 +39,7 @@ class OpenAIBackend:
 
     def chat(self, messages):
         import urllib.request
-        # tool messages are sent as user turns wrapped in <tool_response>, identical to the Qwen2.5 chat template
+        # tool messages are sent as user turns wrapped in <tool_response>, identical to the Qwen chat templates
         msgs = [{"role": "user", "content": f"<tool_response>\n{m['content']}\n</tool_response>"} if m["role"] == "tool" else m for m in messages]
         body = json.dumps({"model": self.model, "messages": msgs, "temperature": 0, "top_p": 1, "seed": 0, "max_tokens": 1500}).encode()
         req = urllib.request.Request(self.url, body, {"Content-Type": "application/json"})

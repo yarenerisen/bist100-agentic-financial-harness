@@ -2,18 +2,16 @@
 
 Kaggle/Colab setup (one cell):
     !pip install -q -U "transformers>=4.45" "peft>=0.13" "bitsandbytes>=0.44" accelerate datasets
-Run:
-    !python training/finetune_qlora.py --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora
-Fast iteration / smaller GPU:
-    --model Qwen/Qwen2.5-3B-Instruct
+Run (project base model: Qwen/Qwen3-8B):
+    !python training/finetune_qlora.py --model Qwen/Qwen3-8B --out /kaggle/working/qwen3-8b-lora --epochs 1 --liger
 Then merge for GGUF export:
-    !python training/finetune_qlora.py --merge --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora
+    !python training/finetune_qlora.py --merge --model Qwen/Qwen3-8B --out /kaggle/working/qwen3-8b-lora --merged-out /tmp/merged
 """
 import argparse, json, math, os, random, time
 from pathlib import Path
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--model", default="Qwen/Qwen2.5-7B-Instruct")
+ap.add_argument("--model", default="Qwen/Qwen3-8B")
 ap.add_argument("--data", default=str(Path(__file__).resolve().parent))
 ap.add_argument("--out", default="bist-lora")
 ap.add_argument("--max-len", type=int, default=6144)

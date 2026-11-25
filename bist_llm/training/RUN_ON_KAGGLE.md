@@ -1,7 +1,8 @@
 # Training and running the model
 
-Base model for the project: **Qwen/Qwen3-8B** (fixed for baseline, fine-tuning and ablation). Commands below show
-Qwen2.5-3B where it was tested locally; replace with `Qwen/Qwen3-8B` and add `--load-4bit` for evaluation.
+Base model for the project: **Qwen/Qwen3-8B** (fixed for baseline, fine-tuning and ablation; `unsloth/Qwen3-8B` is the
+same weights). On Kaggle use the two notebooks: `notebooks/kaggle_finetune.ipynb` (training) and
+`notebooks/kaggle_eval_export.ipynb` (evaluation, ablation, GGUF).
 Qwen3 chats are rendered by `training/prompts.py` (empty think block on every assistant turn) so training and
 inference match; for llama.cpp / Ollama use the raw backends (`--backend llamacpp` / `--backend ollama`).
 
@@ -26,13 +27,13 @@ On Kaggle/Colab:
 
 ## 1) Baseline: evaluate the BASE model first (needed for the base vs fine-tuned comparison)
 ```bash
-python -m harness.evaluate --backend hf --model Qwen/Qwen2.5-3B-Instruct --limit 40 --tag base_E
+python -m harness.evaluate --backend hf --model Qwen/Qwen3-8B --load-4bit --limit 40 --tag base_E
 ```
 
 ## 2) Smoke test, then full training
 ```bash
-python training/finetune_qlora.py --model Qwen/Qwen2.5-3B-Instruct --out runs/smoke --limit 30 --epochs 1 --liger
-python training/finetune_qlora.py --model Qwen/Qwen2.5-3B-Instruct --out runs/bist-lora --epochs 2 --liger --resume
+python training/finetune_qlora.py --model Qwen/Qwen3-8B --out runs/smoke --limit 30 --epochs 1 --liger
+python training/finetune_qlora.py --model Qwen/Qwen3-8B --out runs/bist-lora --epochs 1 --liger --resume
 ```
 - `--liger`: fused linear + cross-entropy; the 152k-vocabulary logits are never materialised (needed for 6k-token
   examples on 8 GB GPUs; training and evaluation both fit).
@@ -42,21 +43,21 @@ python training/finetune_qlora.py --model Qwen/Qwen2.5-3B-Instruct --out runs/bi
 
 ## 3) Evaluate the fine-tuned model (the LoRA adapter can be loaded directly, no merge needed)
 ```bash
-python -m harness.evaluate --backend hf --model runs/bist-lora --tag finetuned_E
-python -m harness.evaluate --backend hf --model runs/bist-lora --limit 15 --repeats 3 --tag finetuned_repro
+python -m harness.evaluate --backend hf --model runs/bist-lora --load-4bit --limit 40 --tag finetuned_E
+python -m harness.evaluate --backend hf --model runs/bist-lora --load-4bit --limit 10 --repeats 3 --tag finetuned_repro
 ```
-Add `--load-4bit` for 7B/8B models on a 16 GB GPU.
+Use the same `--limit` for base and fine-tuned runs: `--limit N` always takes the first N rows of `test.jsonl`, so the runs compare identical questions.
 
 ## 4) Harness ablation A–E (same model, different harness levels)
 A = raw LLM (data as text), B = LLM + tools, C = stateful harness, D = + evidence and quality gate, E = + memory and human review.
 ```bash
-for m in A B C D E; do python -m harness.evaluate --backend hf --model runs/bist-lora --mode $m --limit 20 --tag finetuned_$m; done
-for m in A B E; do python -m harness.evaluate --backend hf --model Qwen/Qwen2.5-3B-Instruct --mode $m --limit 20 --tag base_$m; done
+for m in A B C D E; do python -m harness.evaluate --backend hf --model runs/bist-lora --load-4bit --mode $m --limit 20 --tag finetuned_$m; done
+for m in A B E; do python -m harness.evaluate --backend hf --model Qwen/Qwen3-8B --load-4bit --mode $m --limit 20 --tag base_$m; done
 ```
 
 ## 5) Export to GGUF for llama.cpp / Ollama (fully offline inference)
 ```bash
-python training/finetune_qlora.py --merge --model Qwen/Qwen2.5-3B-Instruct --out runs/bist-lora --merged-out runs/bist-merged
+python training/finetune_qlora.py --merge --model Qwen/Qwen3-8B --out runs/bist-lora --merged-out runs/bist-merged
 git clone https://github.com/ggerganov/llama.cpp && pip install -r llama.cpp/requirements.txt
 python llama.cpp/convert_hf_to_gguf.py runs/bist-merged --outfile bist-analyst-q8_0.gguf --outtype q8_0
 ```
