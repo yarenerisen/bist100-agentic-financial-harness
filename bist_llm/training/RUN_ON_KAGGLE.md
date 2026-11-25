@@ -1,12 +1,17 @@
 # Training and running the model
 
+Base model for the project: **Qwen/Qwen3-8B** (fixed for baseline, fine-tuning and ablation). Commands below show
+Qwen2.5-3B where it was tested locally; replace with `Qwen/Qwen3-8B` and add `--load-4bit` for evaluation.
+Qwen3 chats are rendered by `training/prompts.py` (empty think block on every assistant turn) so training and
+inference match; for llama.cpp / Ollama use the raw backends (`--backend llamacpp` / `--backend ollama`).
+
 Three ways to train, all using `training/finetune_qlora.py` (QLoRA, loss on assistant tokens only):
 
 | Where | Notes |
 |---|---|
 | Local NVIDIA GPU (≥ 8 GB) | Tested on an RTX 4070 Laptop GPU (8 GB): Qwen2.5-3B, bf16, `--liger`, 2 epochs ≈ 3 h 50 min |
 | Google Colab (free T4) | Open `notebooks/colab_finetune.ipynb` (File → Open notebook → GitHub tab → repo URL) and run the cells in order. Checkpoints go to Google Drive; after a disconnect run cells 1–3 again and continue with `--resume` |
-| Kaggle (T4 / P100) | Same commands as below; needs a phone-verified account with GPU enabled |
+| Kaggle (T4 x2) — **team default: Qwen3-8B** | Open `notebooks/kaggle_finetune.ipynb`. Choose T4, not P100 (`--liger` needs compute capability ≥ 7.0). Use Save & Run All for the long run (≈ 3 h per epoch). Add `--load-4bit` when evaluating 8B |
 
 ## 0) Environment
 ```bash

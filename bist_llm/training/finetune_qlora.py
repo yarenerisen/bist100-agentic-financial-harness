@@ -47,6 +47,13 @@ if a.merge:
     print("merged ->", dst); raise SystemExit
 
 
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from training.prompts import chat_style, render_qwen3     # noqa: E402
+STYLE = chat_style(a.model + " " + str(getattr(tok, "chat_template", "")))
+print("chat rendering style:", STYLE)
+
+
 def _ids(messages, gen=False):
     """token ids of the rendered chat (robust to transformers versions returning a dict)."""
     text = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=gen)
@@ -55,6 +62,12 @@ def _ids(messages, gen=False):
 
 def encode(messages):
     """input_ids for the whole chat; labels = -100 except assistant message tokens (incl. end-of-turn)."""
+    if STYLE == "qwen3":   # segment-wise tokenisation: every segment starts at a special-token boundary
+        ids, labels = [], []
+        for text, target in render_qwen3(messages):
+            t = tok(text, add_special_tokens=False)["input_ids"]
+            ids += t; labels += t if target else [-100] * len(t)
+        return {"input_ids": ids, "attention_mask": [1] * len(ids), "labels": labels}
     ids = _ids(messages)
     labels = [-100] * len(ids)
     for i, m in enumerate(messages):
@@ -83,9 +96,11 @@ def load(split):
 
 train, val = load("train"), load("val")
 if a.liger:
-    from liger_kernel.transformers import apply_liger_kernel_to_qwen2
-    apply_liger_kernel_to_qwen2(rope=True, rms_norm=True, swiglu=True, fused_linear_cross_entropy=True, cross_entropy=False)
-    print("liger kernels applied")
+    from transformers import AutoConfig
+    mt = AutoConfig.from_pretrained(a.model).model_type
+    import liger_kernel.transformers as lk
+    getattr(lk, f"apply_liger_kernel_to_{mt}")(rope=True, rms_norm=True, swiglu=True, fused_linear_cross_entropy=True, cross_entropy=False)
+    print(f"liger kernels applied ({mt})")
 bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
 model = AutoModelForCausalLM.from_pretrained(
     a.model, device_map="auto", torch_dtype=torch.bfloat16 if bf16 else torch.float16,

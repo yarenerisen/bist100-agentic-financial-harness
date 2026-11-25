@@ -8,7 +8,7 @@ import argparse, json, sys, time
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from harness.run_agent import run, OpenAIBackend, HFBackend, ReplayBackend   # noqa: E402
+from harness.run_agent import run, ReplayBackend, make_backend   # noqa: E402
 from harness.validate import numbers_not_in_evidence, check_answer          # noqa: E402
 
 import pandas as pd
@@ -81,7 +81,7 @@ def summarize(res):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--backend", default="replay", choices=["replay", "openai", "hf"])
+    ap.add_argument("--backend", default="replay", choices=["replay", "openai", "hf", "llamacpp", "ollama"])
     ap.add_argument("--base-url", default="http://127.0.0.1:8080/v1")
     ap.add_argument("--model", default="bist-analyst")
     ap.add_argument("--data", default=str(ROOT / "training" / "test.jsonl"))
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     if a.backend == "replay":
         fac = lambda row: ReplayBackend(row)
     else:
-        be = OpenAIBackend(a.base_url, a.model, a.allow_remote) if a.backend == "openai" else HFBackend(a.model, a.load_4bit)
+        be = make_backend(a)
         fac = lambda row: be
     res = []
     for i, r in enumerate(rows, 1):

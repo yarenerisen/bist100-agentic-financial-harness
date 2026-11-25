@@ -48,3 +48,42 @@ Rules:
 4. Correlation is not causation; historical results are not guarantees.
 5. If data is missing, insufficient or contradictory use INVESTIGATE; if the request needs future data or a tool reports a data/look-ahead problem use ANALYSIS_UNSAFE.
 6. Only use the analytical states listed above."""
+
+
+# ---------------------------------------------------------------- chat rendering
+# Qwen3's own template only puts the empty "<think>\n\n</think>\n\n" block on the LAST assistant turn, so a
+# multi-turn tool conversation is rendered differently at training time and at each generation step. We therefore
+# render Qwen3 chats ourselves: EVERY assistant turn starts with the empty think block, exactly like the generation
+# prompt with enable_thinking=False. Training, the HF backend and the raw llama.cpp / Ollama backends all use this.
+QWEN3_THINK = "<think>\n\n</think>\n\n"
+
+
+def chat_style(model_name_or_template):
+    s = str(model_name_or_template).lower()
+    return "qwen3" if ("qwen3" in s or "enable_thinking" in s) else "template"
+
+
+def render_qwen3(messages, add_generation_prompt=False):
+    """Returns the list of (text_segment, is_assistant_target) pairs; ''.join(segments) is the prompt."""
+    segs = []
+    for m in messages:
+        r, c = m["role"], m["content"]
+        if r == "system":
+            segs.append((f"<|im_start|>system\n{c}<|im_end|>\n", False))
+        elif r == "user":
+            segs.append((f"<|im_start|>user\n{c}<|im_end|>\n", False))
+        elif r == "tool":
+            segs.append((f"<|im_start|>user\n<tool_response>\n{c}\n</tool_response><|im_end|>\n", False))
+        elif r == "assistant":
+            segs.append((f"<|im_start|>assistant\n{QWEN3_THINK}", False))
+            segs.append((f"{c}<|im_end|>\n", True))
+    if add_generation_prompt:
+        segs.append((f"<|im_start|>assistant\n{QWEN3_THINK}", False))
+    return segs
+
+
+def render_prompt(messages, style, tokenizer=None):
+    """Generation prompt string for the next assistant turn."""
+    if style == "qwen3":
+        return "".join(s for s, _ in render_qwen3(messages, add_generation_prompt=True))
+    return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)

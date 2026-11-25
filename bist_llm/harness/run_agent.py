@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from tools.registry import call_tool, TOOLS            # noqa: E402
 from tools import quality, core                        # noqa: E402
-from training.prompts import SYSTEM_PROMPT             # noqa: E402
+from training.prompts import SYSTEM_PROMPT, chat_style, render_prompt   # noqa: E402
 from harness.validate import check_answer, parse_tool_call  # noqa: E402
 from harness.evidence import build_evidence_bundle  # noqa: E402
 from harness import memory  # noqa: E402
@@ -65,14 +65,40 @@ class HFBackend:
             self.tok = AutoTokenizer.from_pretrained(path)
             self.model = AutoModelForCausalLM.from_pretrained(path, torch_dtype=torch.float16, device_map="auto", **kw)
         self.model.eval()
+        self.style = chat_style(path + " " + str(getattr(self.tok, "chat_template", "")))
         self.torch = torch
 
     def chat(self, messages):
-        text = self.tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        text = render_prompt(messages, self.style, self.tok)
         ids = self.tok(text, add_special_tokens=False, return_tensors="pt")["input_ids"].to(self.model.device)
         with self.torch.no_grad():
             out = self.model.generate(ids, max_new_tokens=1500, do_sample=False)
         return self.tok.decode(out[0, ids.shape[1]:], skip_special_tokens=True)
+
+
+class RawBackend:
+    """Sends the exact training-format prompt to a local llama.cpp server (/completion) or Ollama (/api/generate raw).
+    Use this for Qwen3 models so multi-turn tool conversations are rendered exactly as in training."""
+    def __init__(self, base_url, kind, model="bist-analyst", style="qwen3", allow_remote=False):
+        host = urlparse(base_url).hostname
+        if host not in ("127.0.0.1", "localhost", "0.0.0.0") and not allow_remote:
+            raise SystemExit(f"refusing non-local endpoint {base_url}: the system must not call cloud AI APIs")
+        self.url, self.kind, self.model, self.style = base_url.rstrip("/"), kind, model, style
+
+    def chat(self, messages):
+        import urllib.request
+        prompt = render_prompt(messages, self.style)
+        if self.kind == "llamacpp":
+            url, body = self.url + "/completion", {"prompt": prompt, "temperature": 0, "seed": 0, "n_predict": 1500,
+                                                    "stop": ["<|im_end|>"], "cache_prompt": True}
+        else:
+            url, body = self.url + "/api/generate", {"model": self.model, "prompt": prompt, "raw": True, "stream": False,
+                                                     "options": {"temperature": 0, "seed": 0, "num_predict": 1500,
+                                                                 "num_ctx": 8192, "stop": ["<|im_end|>"]}}
+        req = urllib.request.Request(url, json.dumps(body).encode(), {"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=900) as r:
+            d = json.loads(r.read())
+        return d.get("content") if self.kind == "llamacpp" else d.get("response")
 
 
 class ReplayBackend:
@@ -125,7 +151,7 @@ def run(question, backend, review=False, log=True, mode="E", raw_data=None):
     tool_texts, tickers = [], []
     if mode == "A":
         msgs = [{"role": "system", "content": RAW_SYSTEM}, {"role": "user", "content": question + "\n\nDATA:\n" + (raw_data or "")}]
-        answer = backend.chat(msgs).strip()
+        answer = re.sub(r"(?s)^\s*<think>.*?</think>\s*", "", backend.chat(msgs)).strip()
         tool_texts = [raw_data or ""]
         msgs_final = msgs
     else:
@@ -134,7 +160,7 @@ def run(question, backend, review=False, log=True, mode="E", raw_data=None):
         strict = mode in ("C", "D", "E")
         for step in range(MAX_TOOL_CALLS + 1):
             trace["states"].append("PLAN_TOOL_CALL")
-            out = backend.chat(msgs).strip()
+            out = re.sub(r"(?s)^\s*<think>.*?</think>\s*", "", backend.chat(msgs)).strip()
             if out.startswith("{") or out.startswith("```"):
                 call, err = parse_tool_call(out)
                 if strict:
@@ -215,6 +241,15 @@ def run(question, backend, review=False, log=True, mode="E", raw_data=None):
     return trace
 
 
+def make_backend(a):
+    if a.backend == "openai":
+        return OpenAIBackend(a.base_url, a.model, a.allow_remote)
+    if a.backend in ("llamacpp", "ollama"):
+        url = a.base_url if "8080/v1" not in a.base_url else ("http://127.0.0.1:8080" if a.backend == "llamacpp" else "http://127.0.0.1:11434")
+        return RawBackend(url, a.backend, a.model, getattr(a, "chat_style", "qwen3"), a.allow_remote)
+    return HFBackend(a.model, a.load_4bit)
+
+
 def replay_log(path):
     """Re-executes the logged tool calls and checks the outputs are identical (reproducibility)."""
     t = json.loads(Path(path).read_text())
@@ -225,7 +260,7 @@ def replay_log(path):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("question", nargs="?")
-    ap.add_argument("--backend", default="openai", choices=["openai", "hf"])
+    ap.add_argument("--backend", default="openai", choices=["openai", "hf", "llamacpp", "ollama"])
     ap.add_argument("--base-url", default="http://127.0.0.1:8080/v1")
     ap.add_argument("--model", default="bist-analyst")
     ap.add_argument("--allow-remote", action="store_true", help="allow a non-localhost endpoint you host yourself (e.g. Colab tunnel)")
@@ -239,7 +274,7 @@ if __name__ == "__main__":
         print(json.dumps(replay_log(a.replay), indent=1)); sys.exit()
     if a.bundle:
         print(json.dumps(json.loads(Path(a.bundle).read_text()).get("evidence_bundle"), indent=1, ensure_ascii=False)); sys.exit()
-    be = OpenAIBackend(a.base_url, a.model, a.allow_remote) if a.backend == "openai" else HFBackend(a.model, a.load_4bit)
+    be = make_backend(a)
     q = a.question or input("Question: ")
     tr = run(q, be, review=a.review, mode=a.mode)
     print("\n" + tr["answer"])
