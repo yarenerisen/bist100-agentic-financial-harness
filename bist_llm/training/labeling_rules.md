@@ -35,7 +35,8 @@ from a tool output (verified by `harness/validate.py`: 0 violations across 1,410
 
 Class balancing: WATCH, REJECT_SIGNAL and INVESTIGATE examples are kept with probability 0.35 / 0.45 / 0.7 so rare
 candidate states are learned; rare POTENTIAL_CATCH_UP_CANDIDATE situations found by a scan are re-sampled (train only).
-Test split uses held-out tickers (PGSUS, TOASO, KRDMD, TTKOM, ENJSA, CIMSA, ULKER, TAVHL) for single-stock questions
-and additional unseen question templates.
+Test split uses held-out tickers (PGSUS, TOASO, KRDMD, TTKOM, ENJSA, CIMSA, ULKER, TAVHL): they never appear anywhere in
+train/val (also not inside sector lists or tool outputs; checked automatically), every test sector question contains at
+least one of them, and the test set adds unseen question templates.
 Scenario 4 training rows use a clearly-labelled SYNTHETIC fundamentals file (format learning only); the deployed system
 reads `data/fundamentals.csv` (real KAP data entered by the team).

@@ -132,10 +132,22 @@ def s1(lang, split, forced=None):
         sec, members, sector_arg, h, d = forced
         want_fund = False
     else:
-        secs = [s for s in SEC_EN if len(core.SECTORS[s]) >= 3]
+        # ticker-held-out split: train/val never see TEST_TICKERS (not even inside a sector name);
+        # every test catch-up question contains at least one held-out ticker
+        avail = set(core.available_tickers())
+        pool = {sc: [t for t in core.SECTORS[sc] if t in avail and (split == "test" or t not in TEST_TICKERS)] for sc in SEC_EN}
+        secs = [sc for sc, m in pool.items() if len(m) >= 3 and (split != "test" or set(m) & TEST_TICKERS)]
         sec = rng.choice(secs)
-        members = [t for t in core.SECTORS[sec] if t in core.available_tickers()]
-        if len(members) > 5 or rng.random() < 0.5:
+        members = pool[sec]
+        full = [t for t in core.SECTORS[sec] if t in avail]
+        if split == "test":
+            held = [t for t in members if t in TEST_TICKERS]
+            k = min(len(members), rng.choice([3, 3, 4, 5]))
+            members = sorted(set([rng.choice(held)] + rng.sample(members, k)))[:max(k, 3)]
+            if not set(members) & TEST_TICKERS:
+                members = members[:-1] + [rng.choice(held)]
+            sector_arg = members if (set(members) != set(full) or rng.random() < 0.5) else sec
+        elif len(members) > 5 or members != full or rng.random() < 0.5:
             k = min(len(members), rng.choice([3, 3, 4, 5]))
             members = rng.sample(members, k)
             sector_arg = members
