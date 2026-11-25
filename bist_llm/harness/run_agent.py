@@ -9,7 +9,7 @@ Backends (all local, no cloud AI APIs):
 Usage:
   python -m harness.run_agent --backend openai --model bist-analyst "THYAO ... ?"
 """
-import argparse, json, re, sys, time, uuid
+import argparse, datetime, json, platform, re, sys, time, uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -29,6 +29,30 @@ TOOL_JSON = lambda r: json.dumps(r, ensure_ascii=False, separators=(",", ":"))
 ALLOWED_TOOLS = set(TOOLS) - {"check_data_quality"}
 
 
+DECODING = {"temperature": 0.0, "do_sample": False, "top_p": 1.0, "seed": 0, "max_new_tokens": 1500}
+
+
+def _now():
+    return datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec="milliseconds")
+
+
+def _sha256(path):
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _code_version():
+    import subprocess
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, timeout=5).stdout.strip() or None
+    except Exception:
+        return None
+
+
 # ------------------------------------------------------------------ backends
 class OpenAIBackend:
     def __init__(self, base_url, model, allow_remote=False):
@@ -36,6 +60,9 @@ class OpenAIBackend:
         if host not in ("127.0.0.1", "localhost", "0.0.0.0") and not allow_remote:
             raise SystemExit(f"refusing non-local endpoint {base_url}: the system must not call cloud AI APIs")
         self.url, self.model = base_url.rstrip("/") + "/chat/completions", model
+
+    def describe(self):
+        return {"backend": "openai-compatible local server", "endpoint": self.url, "model": self.model, "decoding": DECODING}
 
     def chat(self, messages):
         import urllib.request
@@ -67,12 +94,31 @@ class HFBackend:
         self.model.eval()
         self.style = chat_style(path + " " + str(getattr(self.tok, "chat_template", "")))
         self.torch = torch
+        self.info = {"backend": "transformers", "model_path": str(path), "load_4bit": load_4bit, "chat_style": self.style,
+                     "decoding": DECODING}
+        if adapter.exists():
+            cfg = json.loads(adapter.read_text())
+            w = Path(path) / "adapter_model.safetensors"
+            self.info.update({"base_model": cfg.get("base_model_name_or_path"), "adapter": str(path),
+                              "adapter_sha256": _sha256(w) if w.exists() else None,
+                              "lora": {k: cfg.get(k) for k in ("r", "lora_alpha", "lora_dropout", "target_modules")}})
+        else:
+            self.info["base_model"] = str(path)
+        try:
+            import transformers, peft
+            self.info["libraries"] = {"torch": torch.__version__, "transformers": transformers.__version__, "peft": peft.__version__}
+        except Exception:
+            pass
+
+    def describe(self):
+        return self.info
 
     def chat(self, messages):
         text = render_prompt(messages, self.style, self.tok)
         ids = self.tok(text, add_special_tokens=False, return_tensors="pt")["input_ids"].to(self.model.device)
+        self.torch.manual_seed(DECODING["seed"])
         with self.torch.no_grad():
-            out = self.model.generate(ids, max_new_tokens=1500, do_sample=False)
+            out = self.model.generate(ids, max_new_tokens=DECODING["max_new_tokens"], do_sample=False)
         return self.tok.decode(out[0, ids.shape[1]:], skip_special_tokens=True)
 
 
@@ -84,6 +130,9 @@ class RawBackend:
         if host not in ("127.0.0.1", "localhost", "0.0.0.0") and not allow_remote:
             raise SystemExit(f"refusing non-local endpoint {base_url}: the system must not call cloud AI APIs")
         self.url, self.kind, self.model, self.style = base_url.rstrip("/"), kind, model, style
+
+    def describe(self):
+        return {"backend": self.kind, "endpoint": self.url, "model": self.model, "chat_style": self.style, "decoding": DECODING}
 
     def chat(self, messages):
         import urllib.request
@@ -105,6 +154,9 @@ class ReplayBackend:
     """Returns the reference assistant messages of a dataset row in order (tests the harness end to end)."""
     def __init__(self, row):
         self.queue = [m["content"] for m in row["messages"][2:] if m["role"] == "assistant"]
+
+    def describe(self):
+        return {"backend": "replay (reference answers, pipeline test only - NOT a model)", "decoding": None}
 
     def chat(self, messages):
         return self.queue.pop(0)
@@ -146,12 +198,31 @@ MODES = {  # harness ablation levels
 def run(question, backend, review=False, log=True, mode="E", raw_data=None):
     t0 = time.time()
     lang_tr = bool(re.search(r"[çğıöşüÇĞİÖŞÜ]", question))
-    trace = {"id": str(uuid.uuid4())[:8], "mode": mode, "question": question, "states": ["START"], "tool_calls": [],
+    trace = {"id": str(uuid.uuid4())[:8], "timestamp_start": _now(), "analysis_date": "2026-09-10", "mode": mode,
+             "model": backend.describe() if hasattr(backend, "describe") else {"backend": type(backend).__name__},
+             "code_version": _code_version(), "python": platform.python_version(),
+             "system_prompt": RAW_SYSTEM if mode == "A" else SYSTEM_PROMPT, "user_prompt": question,
+             "question": question, "states": ["START"], "model_turns": [], "tool_calls": [],
              "invalid_tool_calls": 0, "quality_gate": None, "answer_retries": 0}
     tool_texts, tickers = [], []
+    source = {"value": "model"}
+
+    def ask(messages, purpose):
+        """Every model call is recorded with timestamps and its raw output."""
+        t_start, ts = _now(), time.time()
+        raw = backend.chat(messages)
+        trace["model_turns"].append({"turn": len(trace["model_turns"]) + 1, "purpose": purpose, "started_at": t_start,
+                                     "finished_at": _now(), "latency_s": round(time.time() - ts, 2), "raw_output": raw})
+        return re.sub(r"(?s)^\s*<think>.*?</think>\s*", "", raw or "").strip()
+
+    def fallback(reason):
+        source["value"] = "harness_fallback"
+        trace["fallback_reason"] = reason
+        return safe_fallback(reason, lang_tr)
+
     if mode == "A":
         msgs = [{"role": "system", "content": RAW_SYSTEM}, {"role": "user", "content": question + "\n\nDATA:\n" + (raw_data or "")}]
-        answer = re.sub(r"(?s)^\s*<think>.*?</think>\s*", "", backend.chat(msgs)).strip()
+        answer = ask(msgs, "answer")
         tool_texts = [raw_data or ""]
         msgs_final = msgs
     else:
@@ -160,7 +231,7 @@ def run(question, backend, review=False, log=True, mode="E", raw_data=None):
         strict = mode in ("C", "D", "E")
         for step in range(MAX_TOOL_CALLS + 1):
             trace["states"].append("PLAN_TOOL_CALL")
-            out = re.sub(r"(?s)^\s*<think>.*?</think>\s*", "", backend.chat(msgs)).strip()
+            out = ask(msgs, "tool_call_or_answer")
             if out.startswith("{") or out.startswith("```"):
                 call, err = parse_tool_call(out)
                 if strict:
@@ -173,15 +244,17 @@ def run(question, backend, review=False, log=True, mode="E", raw_data=None):
                     if not strict:
                         answer = out; break
                     if trace["invalid_tool_calls"] >= 2:
-                        answer = safe_fallback(f"invalid tool call: {err}", lang_tr); break
+                        answer = fallback(f"invalid tool call: {err}"); break
                     msgs += [{"role": "assistant", "content": out},
                              {"role": "tool", "content": TOOL_JSON({"error": "INVALID_CALL", "message": err})}]
                     continue
                 trace["states"].append("EXECUTE_TOOL")
+                t_start, ts = _now(), time.time()
                 res = call_tool(call["tool"], call["arguments"])
                 if "error" in res:
                     trace["invalid_tool_calls"] += res["error"] in ("INVALID_CALL", "UNKNOWN_TOOL")
-                trace["tool_calls"].append({"tool": call["tool"], "arguments": call["arguments"], "result": res})
+                trace["tool_calls"].append({"tool": call["tool"], "arguments": call["arguments"], "started_at": t_start,
+                                            "finished_at": _now(), "latency_s": round(time.time() - ts, 3), "result": res})
                 tickers += _tickers_in(call["arguments"])
                 txt = TOOL_JSON(res); tool_texts.append(txt)
                 msgs += [{"role": "assistant", "content": json.dumps(call, ensure_ascii=False)}, {"role": "tool", "content": txt}]
@@ -191,7 +264,7 @@ def run(question, backend, review=False, log=True, mode="E", raw_data=None):
             answer = out
             break
         if answer is None:
-            answer = safe_fallback("too many tool calls", lang_tr)
+            answer = fallback("too many tool calls")
         msgs_final = msgs
     if mode in ("D", "E"):
         # ---- quality gate (deterministic, run by the harness, not the model)
@@ -201,23 +274,29 @@ def run(question, backend, review=False, log=True, mode="E", raw_data=None):
             qg = quality.check_data_quality(valid_t)
             trace["quality_gate"] = {"status": qg["status"], "hard_blocks": qg["hard_blocks"], "warnings": qg["warnings"]}
             if qg["status"] == "HARD_BLOCK":
-                answer = safe_fallback("data-quality gate HARD_BLOCK: " + "; ".join(qg["hard_blocks"]), lang_tr)
+                trace["model_answer_before_gate"] = answer
+                answer = fallback("data-quality gate HARD_BLOCK: " + "; ".join(qg["hard_blocks"]))
         # ---- validate answer; one retry, then safe fallback
         trace["states"].append("VALIDATE_ANSWER")
         chk = check_answer(answer, tool_texts + [question])
-        if not chk["ok"] and "could not produce a validated analysis" not in answer and "doğrulanmış bir analiz üretemedi" not in answer:
+        if not chk["ok"] and source["value"] != "harness_fallback":
             trace["answer_retries"] += 1
             trace["first_answer"], trace["first_answer_issues"] = answer, chk["issues"]
             retry = msgs_final + [{"role": "assistant", "content": answer},
                                   {"role": "user", "content": "Your answer failed validation: " + "; ".join(chk["issues"]) +
                                    ". Rewrite it using only numbers that appear in the tool results, the required format and an allowed state."}]
-            answer2 = backend.chat(retry).strip() if not isinstance(backend, ReplayBackend) else answer
+            answer2 = ask(retry, "validation_retry") if not isinstance(backend, ReplayBackend) else answer
             chk2 = check_answer(answer2, tool_texts + [question])
-            answer, chk = (answer2, chk2) if chk2["ok"] else (safe_fallback("answer failed validation: " + "; ".join(chk["issues"]), lang_tr), chk)
+            if chk2["ok"]:
+                answer, chk = answer2, chk2
+                source["value"] = "model_after_validation_retry"
+            else:
+                answer = fallback("answer failed validation: " + "; ".join(chk["issues"]))
         trace["states"].append("BUILD_EVIDENCE")
         trace["evidence_bundle"] = build_evidence_bundle(trace["tool_calls"], answer, question)
     trace["answer_validation"] = check_answer(answer, tool_texts + [question])
     trace["answer"] = answer
+    trace["answer_source"] = source["value"]   # model | model_after_validation_retry | harness_fallback
     trace["state"] = trace["answer_validation"]["state"]
     # ---- human review + episodic memory
     if mode == "E" and review:
@@ -232,6 +311,7 @@ def run(question, backend, review=False, log=True, mode="E", raw_data=None):
         reason = input("Reason: ").strip() if dec in ("r", "m") else ""
         trace["human_review"] = {"decision": {"a": "ACCEPT", "r": "REJECT", "m": "MODIFY"}.get(dec, "ACCEPT"), "reason": reason}
     trace["states"].append("LOG_AND_CLOSE")
+    trace["timestamp_end"] = _now()
     trace["latency_s"] = round(time.time() - t0, 2)
     trace["n_tool_calls"] = len([c for c in trace["tool_calls"] if "tool" in c])
     if log and mode == "E":

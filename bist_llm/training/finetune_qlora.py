@@ -141,8 +141,16 @@ import glob
 last = sorted(glob.glob(os.path.join(a.out, "checkpoint-*")), key=lambda p: int(p.rsplit("-", 1)[1]))
 trainer.train(resume_from_checkpoint=last[-1] if (a.resume and last) else None)
 trainer.save_model(a.out); tok.save_pretrained(a.out)
-hist = {"base_model": a.model, "train_examples": len(train), "val_examples": len(val), "epochs": a.epochs, "lr": a.lr,
-        "lora_rank": a.rank, "lora_alpha": a.alpha, "grad_accum": a.grad_accum, "max_len": a.max_len,
+hist = {"base_model": a.model, "chat_rendering": STYLE, "train_examples": len(train), "val_examples": len(val),
+        "hyperparameters": {"method": "QLoRA", "quantization": "4-bit NF4, double quantization", "compute_dtype": "bf16" if bf16 else "fp16",
+                            "lora_rank": a.rank, "lora_alpha": a.alpha, "lora_dropout": 0.05,
+                            "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+                            "epochs": a.epochs, "learning_rate": a.lr, "lr_scheduler": "cosine", "warmup": 0.05,
+                            "per_device_batch_size": 1, "gradient_accumulation_steps": a.grad_accum,
+                            "effective_batch_size": a.grad_accum, "max_sequence_length": a.max_len,
+                            "optimizer": "paged_adamw_8bit", "gradient_checkpointing": True, "liger_fused_cross_entropy": a.liger,
+                            "loss": "assistant tokens only (tool calls and final answers)", "seed": 42},
+        "epochs": a.epochs, "lr": a.lr, "lora_rank": a.rank, "lora_alpha": a.alpha, "grad_accum": a.grad_accum, "max_len": a.max_len,
         "minutes": round((time.time() - t0) / 60, 1), "log_history": trainer.state.log_history}
 Path(a.out, "training_report.json").write_text(json.dumps(hist, indent=1))
 print("saved adapter + training_report.json to", a.out)

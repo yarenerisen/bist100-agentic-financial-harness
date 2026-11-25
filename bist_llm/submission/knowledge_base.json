@@ -1,0 +1,2839 @@
+{
+ "name": "BIST-Analyst knowledge base",
+ "built_at": "2026-11-25T14:19:14+0300",
+ "analysis_date": "2026-09-10",
+ "retrieval": "deterministic tool-based retrieval over structured, timestamped sources (no vector store); point-in-time filters ensure nothing after 2026-09-10 is returned",
+ "documents": [
+  {
+   "id": "market_prices",
+   "type": "market_data",
+   "path": "bist_llm/data/prices.parquet",
+   "sha256": "2dcd01dbc832d20f4d169458f5928185a8b5a7e060a330be64a45ddb3cfd3b95",
+   "bytes": 2390260,
+   "source": {
+    "provider": "Yahoo Finance via yfinance",
+    "adjustment": "split and dividend adjusted (auto_adjust=True)",
+    "script": "bist_llm/data/download_prices.py"
+   },
+   "used_by_tools": [
+    "get_stock_history",
+    "get_index_history",
+    "rank_sector_relative_strength",
+    "run_backtest",
+    "test_weekday_pattern",
+    "detect_multiday_patterns",
+    "calculate_indicators",
+    "detect_reversal_events",
+    "find_support_resistance",
+    "preview_strategy_variants",
+    "get_macro_context",
+    "calculate_fundamental_change",
+    "check_data_quality"
+   ],
+   "series": [
+    "AEFES",
+    "AGESA",
+    "AGHOL",
+    "AKBNK",
+    "AKCNS",
+    "AKSA",
+    "AKSEN",
+    "ALARK",
+    "ALFAS",
+    "ANSGR",
+    "ARCLK",
+    "ASELS",
+    "ASTOR",
+    "AYGAZ",
+    "BIMAS",
+    "BRSAN",
+    "BTCIM",
+    "CCOLA",
+    "CIMSA",
+    "CLEBI",
+    "CWENE",
+    "DOAS",
+    "DOHOL",
+    "ECILC",
+    "EKGYO",
+    "ENERY",
+    "ENJSA",
+    "ENKAI",
+    "EREGL",
+    "EUPWR",
+    "EURTRY",
+    "FROTO",
+    "GARAN",
+    "GESAN",
+    "GRSEL",
+    "GUBRF",
+    "HALKB",
+    "HEKTS",
+    "ISCTR",
+    "ISMEN",
+    "KCHOL",
+    "KONTR",
+    "KRDMD",
+    "MAVI",
+    "MGROS",
+    "MIATK",
+    "MPARK",
+    "ODAS",
+    "OTKAR",
+    "OYAKC",
+    "PETKM",
+    "PGSUS",
+    "REEDR",
+    "SAHOL",
+    "SASA",
+    "SISE",
+    "SKBNK",
+    "SMRTG",
+    "SOKM",
+    "TABGD",
+    "TAVHL",
+    "TCELL",
+    "THYAO",
+    "TKFEN",
+    "TOASO",
+    "TRALT",
+    "TSKB",
+    "TTKOM",
+    "TTRAK",
+    "TUKAS",
+    "TUPRS",
+    "TURSG",
+    "ULKER",
+    "USDTRY",
+    "VAKBN",
+    "VESTL",
+    "XU100",
+    "YKBNK",
+    "ZOREN"
+   ],
+   "date_range": [
+    "2023-06-01",
+    "2026-09-10"
+   ],
+   "rows": 64498
+  },
+  {
+   "id": "fundamentals_quarterly",
+   "type": "fundamentals",
+   "path": "bist_llm/data/fundamentals.csv",
+   "sha256": "766ffa2750bfd6ad88d957f699d76189e917593488aaa83e549b997fae37349a",
+   "bytes": 16210,
+   "source": {
+    "provider": "KAP financial report PDFs",
+    "parser": "bist_llm/data/parse_financials.py",
+    "point_in_time_key": "disclosure_date (board-approval date in the report)"
+   },
+   "used_by_tools": [
+    "get_fundamental_metrics",
+    "calculate_fundamental_change",
+    "preview_strategy_variants",
+    "get_news_events"
+   ],
+   "companies": [
+    "ARCLK",
+    "ASELS",
+    "BIMAS",
+    "CCOLA",
+    "EREGL",
+    "FROTO",
+    "MGROS",
+    "PGSUS",
+    "TCELL",
+    "THYAO",
+    "TOASO",
+    "TTKOM",
+    "TUPRS"
+   ],
+   "rows": 91
+  },
+  {
+   "id": "fundamentals_parsed_ytd",
+   "type": "fundamentals_audit_trail",
+   "path": "bist_llm/data/fundamentals_parsed_ytd.csv",
+   "sha256": "bb5c1b9460124e29f3f52b7b192b7598e6647f145ce52a5b37de76369fd9291a",
+   "bytes": 11784,
+   "source": {
+    "provider": "KAP financial report PDFs",
+    "parser": "bist_llm/data/parse_financials.py"
+   },
+   "used_by_tools": []
+  },
+  {
+   "id": "macro_policy_rate",
+   "type": "macro",
+   "path": "bist_llm/data/policy_rate.csv",
+   "sha256": "82d41defdd873f8ce2be5eb3a1d3d70e1658b80725f539513fa8913ce5093054",
+   "bytes": 909,
+   "source": {
+    "provider": "CBRT (TCMB) MPC decisions"
+   },
+   "used_by_tools": [
+    "get_macro_context",
+    "get_news_events"
+   ],
+   "records": [
+    {
+     "effective_date": "2023-12-21",
+     "policy_rate_pct": 42.5,
+     "source": "TCMB PPK (verify: TCMB 2025 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2024-01-25",
+     "policy_rate_pct": 45.0,
+     "source": "TCMB PPK (verify: TCMB 2025 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2024-03-21",
+     "policy_rate_pct": 50.0,
+     "source": "TCMB PPK (verify: TCMB 2025 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2024-12-26",
+     "policy_rate_pct": 47.5,
+     "source": "TCMB PPK (verify: TCMB 2025 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2025-01-23",
+     "policy_rate_pct": 45.0,
+     "source": "TCMB PPK (verify: TCMB 2026 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2025-03-06",
+     "policy_rate_pct": 42.5,
+     "source": "TCMB PPK (verify: TCMB 2026 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2025-04-17",
+     "policy_rate_pct": 46.0,
+     "source": "TCMB PPK (verify: TCMB 2026 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2025-07-24",
+     "policy_rate_pct": 43.0,
+     "source": "TCMB PPK (verify: TCMB 2026 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2025-09-11",
+     "policy_rate_pct": 40.5,
+     "source": "TCMB PPK (verify: TCMB 2026 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2025-10-23",
+     "policy_rate_pct": 39.5,
+     "source": "TCMB PPK (verify: TCMB 2026 Para Politikasi Ek1 Tablo1)"
+    },
+    {
+     "effective_date": "2025-12-11",
+     "policy_rate_pct": 38.0,
+     "source": "TCMB PPK (Euronews 2025-12-11)"
+    },
+    {
+     "effective_date": "2026-01-22",
+     "policy_rate_pct": 37.0,
+     "source": "TCMB PPK (doviz.com / forexciler)"
+    },
+    {
+     "effective_date": "2026-09-10",
+     "policy_rate_pct": 37.0,
+     "source": "TCMB PPK hold (forexciler 2026-09-10)"
+    }
+   ]
+  },
+  {
+   "id": "macro_fed_rate",
+   "type": "macro",
+   "path": "bist_llm/data/fed_rate.csv",
+   "sha256": "c69cbdc32d29bff4953d05fda9d982556a3f0d20ff55d41bafee953016662ed7",
+   "bytes": 286,
+   "source": {
+    "provider": "Federal Reserve FOMC decisions"
+   },
+   "used_by_tools": [
+    "get_macro_context",
+    "get_news_events"
+   ],
+   "records": [
+    {
+     "effective_date": "2023-07-26",
+     "fed_funds_lower_pct": 5.25,
+     "fed_funds_upper_pct": 5.5,
+     "source": "FOMC"
+    },
+    {
+     "effective_date": "2024-09-18",
+     "fed_funds_lower_pct": 4.75,
+     "fed_funds_upper_pct": 5.0,
+     "source": "FOMC"
+    },
+    {
+     "effective_date": "2024-11-07",
+     "fed_funds_lower_pct": 4.5,
+     "fed_funds_upper_pct": 4.75,
+     "source": "FOMC"
+    },
+    {
+     "effective_date": "2024-12-18",
+     "fed_funds_lower_pct": 4.25,
+     "fed_funds_upper_pct": 4.5,
+     "source": "FOMC"
+    },
+    {
+     "effective_date": "2025-09-17",
+     "fed_funds_lower_pct": 4.0,
+     "fed_funds_upper_pct": 4.25,
+     "source": "FOMC"
+    },
+    {
+     "effective_date": "2025-10-29",
+     "fed_funds_lower_pct": 3.75,
+     "fed_funds_upper_pct": 4.0,
+     "source": "FOMC"
+    },
+    {
+     "effective_date": "2025-12-10",
+     "fed_funds_lower_pct": 3.5,
+     "fed_funds_upper_pct": 3.75,
+     "source": "FOMC (2026 decisions not yet entered - verify)"
+    }
+   ]
+  },
+  {
+   "id": "macro_cpi",
+   "type": "macro",
+   "path": "bist_llm/data/cpi.csv",
+   "sha256": "f39b30a43fa9ec061c6a282c0a68f935ba3a29ae3687eca75ab5e93b05cbc355",
+   "bytes": 64,
+   "source": {
+    "provider": "TurkStat CPI (template, not loaded)"
+   },
+   "used_by_tools": [
+    "get_macro_context"
+   ],
+   "records": []
+  },
+  {
+   "id": "sector_map",
+   "type": "reference",
+   "path": "bist_llm/tools/core.py",
+   "source": {
+    "provider": "project (simplified sector map)"
+   },
+   "used_by_tools": [
+    "rank_sector_relative_strength",
+    "run_backtest",
+    "calculate_fundamental_change",
+    "check_data_quality"
+   ],
+   "content": {
+    "banking": [
+     "AKBNK",
+     "GARAN",
+     "ISCTR",
+     "YKBNK",
+     "HALKB",
+     "VAKBN",
+     "TSKB",
+     "SKBNK"
+    ],
+    "retail": [
+     "BIMAS",
+     "MGROS",
+     "MAVI",
+     "SOKM"
+    ],
+    "holding": [
+     "KCHOL",
+     "SAHOL",
+     "DOHOL",
+     "AGHOL",
+     "ALARK"
+    ],
+    "steel": [
+     "EREGL",
+     "KRDMD",
+     "BRSAN"
+    ],
+    "automotive": [
+     "FROTO",
+     "TOASO",
+     "DOAS",
+     "OTKAR",
+     "TTRAK"
+    ],
+    "food_beverage": [
+     "CCOLA",
+     "AEFES",
+     "ULKER",
+     "TUKAS",
+     "TABGD"
+    ],
+    "airlines": [
+     "THYAO",
+     "PGSUS"
+    ],
+    "aviation_services": [
+     "TAVHL",
+     "CLEBI"
+    ],
+    "telecom": [
+     "TCELL",
+     "TTKOM"
+    ],
+    "utilities": [
+     "ENJSA",
+     "AKSEN",
+     "ODAS",
+     "ZOREN",
+     "ENERY",
+     "ALFAS"
+    ],
+    "energy_equipment": [
+     "CWENE",
+     "EUPWR",
+     "ASTOR",
+     "SMRTG",
+     "GESAN",
+     "KONTR"
+    ],
+    "chemicals": [
+     "SASA",
+     "AKSA",
+     "HEKTS",
+     "GUBRF"
+    ],
+    "petroleum": [
+     "TUPRS",
+     "PETKM",
+     "AYGAZ"
+    ],
+    "cement": [
+     "OYAKC",
+     "CIMSA",
+     "BTCIM",
+     "AKCNS"
+    ],
+    "glass": [
+     "SISE"
+    ],
+    "defense": [
+     "ASELS"
+    ],
+    "mining": [
+     "TRALT"
+    ],
+    "insurance": [
+     "TURSG",
+     "ANSGR",
+     "AGESA"
+    ],
+    "brokerage": [
+     "ISMEN"
+    ],
+    "healthcare": [
+     "MPARK",
+     "ECILC"
+    ],
+    "reit": [
+     "EKGYO"
+    ],
+    "durables": [
+     "ARCLK",
+     "VESTL"
+    ],
+    "construction": [
+     "ENKAI",
+     "TKFEN"
+    ],
+    "technology": [
+     "MIATK",
+     "REEDR"
+    ]
+   }
+  },
+  {
+   "id": "labeling_rules",
+   "type": "reference",
+   "path": "bist_llm/training/labeling_rules.md",
+   "sha256": "1ba7de29e3c0274d117b19d106b9e97beff8af6dea69d50bd230c1b7400d99ff",
+   "bytes": 2759,
+   "source": {
+    "provider": "project documentation"
+   },
+   "used_by_tools": []
+  },
+  {
+   "id": "data_dictionary",
+   "type": "reference",
+   "path": "docs/data_dictionary.md",
+   "sha256": "bbc8fc2b0f5aa639b97ff5dd77e336122fd2da799d02f807a520e3495a715f2f",
+   "bytes": 6709,
+   "source": {
+    "provider": "project documentation"
+   },
+   "used_by_tools": []
+  },
+  {
+   "id": "study_universe",
+   "type": "reference",
+   "path": "docs/universe.md",
+   "sha256": "caf580974362f51d125a4c9cc03e8ce674db67bde6ae6ff4b86c062035a80192",
+   "bytes": 1403,
+   "source": {
+    "provider": "project documentation"
+   },
+   "used_by_tools": []
+  },
+  {
+   "id": "research_01_sector_catch_up",
+   "type": "research_report",
+   "path": "docs/results/01_sector_catch_up.md",
+   "sha256": "f95ca6127bcd400d5f1e2a3cce61d3ecdf2d4e35a17d5c92198ad0e5cb5b2090",
+   "bytes": 3908,
+   "source": {
+    "provider": "bist_llm/research/run_scenarios.py"
+   },
+   "used_by_tools": []
+  },
+  {
+   "id": "research_02_weekday_patterns",
+   "type": "research_report",
+   "path": "docs/results/02_weekday_patterns.md",
+   "sha256": "115096c79f998b5c1aa6317be500d1467e1d7cd8611e99d4230000b93e8305dd",
+   "bytes": 2791,
+   "source": {
+    "provider": "bist_llm/research/run_scenarios.py"
+   },
+   "used_by_tools": []
+  },
+  {
+   "id": "research_03_technical_reversals",
+   "type": "research_report",
+   "path": "docs/results/03_technical_reversals.md",
+   "sha256": "8c91703a7392554f3358820490e5a3c2846f0e1ea32cc79d9076da6e9a74e4d9",
+   "bytes": 2349,
+   "source": {
+    "provider": "bist_llm/research/run_scenarios.py"
+   },
+   "used_by_tools": []
+  },
+  {
+   "id": "research_04_fundamentals_price_reaction",
+   "type": "research_report",
+   "path": "docs/results/04_fundamentals_price_reaction.md",
+   "sha256": "e30ae7b4739824981db2e9cf036d846ce34ff5eb491cd60d77288fd1e4873b5c",
+   "bytes": 1779,
+   "source": {
+    "provider": "bist_llm/research/run_scenarios.py"
+   },
+   "used_by_tools": []
+  },
+  {
+   "id": "research_05_macro_context",
+   "type": "research_report",
+   "path": "docs/results/05_macro_context.md",
+   "sha256": "79758e6cce0154b77fec3f1ba34a391987c601a035087e20395a12912eb9170f",
+   "bytes": 2285,
+   "source": {
+    "provider": "bist_llm/research/run_scenarios.py"
+   },
+   "used_by_tools": []
+  },
+  {
+   "id": "research_06_strategy_variants",
+   "type": "research_report",
+   "path": "docs/results/06_strategy_variants.md",
+   "sha256": "30d7d2ddc334417f0ac0de0ad9356ce64297ed7269d22821c038e1bac9ed751c",
+   "bytes": 1925,
+   "source": {
+    "provider": "bist_llm/research/run_scenarios.py"
+   },
+   "used_by_tools": []
+  }
+ ],
+ "kap_reports": [
+  {
+   "id": "kap_ARCLK_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "ARCLK",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-01-31",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 0.0,
+    "ebit_ytd": 7122426.0,
+    "da_ytd": 16549997.0,
+    "net_profit_ytd": 1689082.0,
+    "cash": 50815825.0,
+    "st_borrowings": 51378198.0,
+    "lt_current_portion": 10888592.0,
+    "lt_borrowings": 75776290.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ARCLK/2024Q4.pdf",
+    "sha256": "05326116f1545f8971857bd6aafebe90042f6f44f6942b7c8fdcf874f3115356"
+   }
+  },
+  {
+   "id": "kap_ARCLK_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "ARCLK",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-04-25",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 109117642.0,
+    "ebit_ytd": 2504920.0,
+    "da_ytd": 4720201.0,
+    "net_profit_ytd": -1951579.0,
+    "cash": 43866671.0,
+    "st_borrowings": 67734061.0,
+    "lt_current_portion": 11500533.0,
+    "lt_borrowings": 79328606.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ARCLK/2025Q1.pdf",
+    "sha256": "138254cc4dc382a10468b024f34a6c09828023fcca93a475647f900769db068d"
+   }
+  },
+  {
+   "id": "kap_ARCLK_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "ARCLK",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-07-25",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 237035579.0,
+    "ebit_ytd": 5296414.0,
+    "da_ytd": 10371909.0,
+    "net_profit_ytd": -5023067.0,
+    "cash": 60075144.0,
+    "st_borrowings": 84931362.0,
+    "lt_current_portion": 45093149.0,
+    "lt_borrowings": 75109665.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ARCLK/2025Q2.pdf",
+    "sha256": "de6459fc9179f9b73295bf9ecb5152fb42a7ab5636afd5c7a344ad1e9a5ff247"
+   }
+  },
+  {
+   "id": "kap_ARCLK_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "ARCLK",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-10-24",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 379269284.0,
+    "ebit_ytd": 7923778.0,
+    "da_ytd": 16951747.0,
+    "net_profit_ytd": -7738459.0,
+    "cash": 71440375.0,
+    "st_borrowings": 105867461.0,
+    "lt_current_portion": 36519426.0,
+    "lt_borrowings": 79286229.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ARCLK/2025Q3.pdf",
+    "sha256": "4e1f4b08f18209834c0a49733cb83577d943aaa56243ffc627893accc0434022"
+   }
+  },
+  {
+   "id": "kap_ARCLK_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "ARCLK",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-01-30",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 523933321.0,
+    "ebit_ytd": 10494106.0,
+    "da_ytd": 23251359.0,
+    "net_profit_ytd": -9799313.0,
+    "cash": 97829154.0,
+    "st_borrowings": 115029066.0,
+    "lt_current_portion": 32919788.0,
+    "lt_borrowings": 87949553.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ARCLK/2025Q4.pdf",
+    "sha256": "6e90266c7dbaf33472980f4837dbfd10289f7d9781c6a8c22c576076ac8d7704"
+   }
+  },
+  {
+   "id": "kap_ARCLK_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "ARCLK",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-04-22",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 130271680.0,
+    "ebit_ytd": 234374.0,
+    "da_ytd": 5625949.0,
+    "net_profit_ytd": -2214344.0,
+    "cash": 79461672.0,
+    "st_borrowings": 126094745.0,
+    "lt_current_portion": 33682174.0,
+    "lt_borrowings": 89465862.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ARCLK/2026Q1.pdf",
+    "sha256": "4f8faadc4a13b3831a178469d1c1aa6fd86c30a9ada56d04c864c3254ddd0158"
+   }
+  },
+  {
+   "id": "kap_ARCLK_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "ARCLK",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-07-29",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 280732536.0,
+    "ebit_ytd": 6007505.0,
+    "da_ytd": 10874288.0,
+    "net_profit_ytd": 443764.0,
+    "cash": 64288017.0,
+    "st_borrowings": 129012450.0,
+    "lt_current_portion": 21506623.0,
+    "lt_borrowings": 107423307.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ARCLK/2026Q2.pdf",
+    "sha256": "29274a562154d4ce9ccaeb99195f044766999d0712f6883bed22f82339809b1e"
+   }
+  },
+  {
+   "id": "kap_ASELS_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "ASELS",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-02-25",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 120205594.0,
+    "ebit_ytd": 27315635.0,
+    "da_ytd": 3299534.0,
+    "net_profit_ytd": 15222719.0,
+    "cash": 16637264.0,
+    "st_borrowings": 13564768.0,
+    "lt_current_portion": 9270807.0,
+    "lt_borrowings": 9726747.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ASELS/2024Q4.pdf",
+    "sha256": "ed4981265157cd7256a77b1d89a15ff16b13173df1cb0f839c0e07e0d65bfd9a"
+   }
+  },
+  {
+   "id": "kap_ASELS_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "ASELS",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-04-29",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 22790773.0,
+    "ebit_ytd": 7406479.0,
+    "da_ytd": 1171162.0,
+    "net_profit_ytd": 2133491.0,
+    "cash": 12832115.0,
+    "st_borrowings": 6036829.0,
+    "lt_current_portion": 26736849.0,
+    "lt_borrowings": 171730.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ASELS/2025Q1.pdf",
+    "sha256": "cf94ec8e2805cb850cd7ddd720f1019fdc7ecf8131924ffab2d0047bac611b0d"
+   }
+  },
+  {
+   "id": "kap_ASELS_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "ASELS",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-08-05",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 53710197.0,
+    "ebit_ytd": 17458086.0,
+    "da_ytd": 2245875.0,
+    "net_profit_ytd": 6410609.0,
+    "cash": 15791773.0,
+    "st_borrowings": 6869286.0,
+    "lt_current_portion": 29809309.0,
+    "lt_borrowings": 154463.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ASELS/2025Q2.pdf",
+    "sha256": "e2eac831a78528efc551ece7c2c02fbcd09cb5cd09baeec33ee0c9035b47fd0b"
+   }
+  },
+  {
+   "id": "kap_ASELS_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "ASELS",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 90872870.0,
+    "ebit_ytd": 26273798.0,
+    "da_ytd": 3748282.0,
+    "net_profit_ytd": 11587759.0,
+    "cash": 14437566.0,
+    "st_borrowings": 12737397.0,
+    "lt_current_portion": 24257680.0,
+    "lt_borrowings": 1211187.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ASELS/2025Q3.pdf",
+    "sha256": "bed34d88c539b7dc77c0d634dffabe9f00a32a0c87c4981905396ea6855c3973"
+   }
+  },
+  {
+   "id": "kap_ASELS_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "ASELS",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-02-24",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 180444938.0,
+    "ebit_ytd": 49145855.0,
+    "da_ytd": 5548597.0,
+    "net_profit_ytd": 29917727.0,
+    "cash": 29086476.0,
+    "st_borrowings": 13125911.0,
+    "lt_current_portion": 24902275.0,
+    "lt_borrowings": 5028364.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ASELS/2025Q4.pdf",
+    "sha256": "010147126bc36e232709b9b26f59089e3dd76894bd5b3f9ad4878abd03f83273"
+   }
+  },
+  {
+   "id": "kap_ASELS_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "ASELS",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-04-28",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 34305800.0,
+    "ebit_ytd": 8549768.0,
+    "da_ytd": 1894724.0,
+    "net_profit_ytd": 5549453.0,
+    "cash": 31005730.0,
+    "st_borrowings": 26060690.0,
+    "lt_current_portion": 22709868.0,
+    "lt_borrowings": 4319259.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ASELS/2026Q1.pdf",
+    "sha256": "edca62b53062b4aca1f1581b1b3cd643526113ff235564deb62360524d72b6d9"
+   }
+  },
+  {
+   "id": "kap_ASELS_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "ASELS",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 88494252.0,
+    "ebit_ytd": 22530965.0,
+    "da_ytd": 4338537.0,
+    "net_profit_ytd": 14449834.0,
+    "cash": 39468926.0,
+    "st_borrowings": 25398173.0,
+    "lt_current_portion": 39308899.0,
+    "lt_borrowings": 8586218.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "ASELS/2026Q2.pdf",
+    "sha256": "5025dfca5a6c184f6edceed54790049cd644af6d6342d25842a04ac48f453620"
+   }
+  },
+  {
+   "id": "kap_BIMAS_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "BIMAS",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-03-11",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 519566633.0,
+    "ebit_ytd": 5301727.0,
+    "da_ytd": 17212576.0,
+    "net_profit_ytd": 18612946.0,
+    "cash": 2815106.0,
+    "st_borrowings": 8146338.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 28829650.0,
+    "lease_liabilities": 36975988.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "BIMAS/2024Q4.pdf",
+    "sha256": "afbb5d8065a3e1c37ab4f6f1dfe6e1f7a47e3c4ab3a14817e467acbca468846e"
+   }
+  },
+  {
+   "id": "kap_BIMAS_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "BIMAS",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-05-08",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 147722657.0,
+    "ebit_ytd": -1297669.0,
+    "da_ytd": 6181330.0,
+    "net_profit_ytd": 2710405.0,
+    "cash": 7954369.0,
+    "st_borrowings": 9602131.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 32488120.0,
+    "lease_liabilities": 42090251.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "BIMAS/2025Q1.pdf",
+    "sha256": "e092a867e4284dd507324bc1653b4f0e8933fe40ab169b0d50866273fb1df033"
+   }
+  },
+  {
+   "id": "kap_BIMAS_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "BIMAS",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-08-14",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 309834891.0,
+    "ebit_ytd": 2401768.0,
+    "da_ytd": 12313518.0,
+    "net_profit_ytd": 5553111.0,
+    "cash": 2921163.0,
+    "st_borrowings": 10292884.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 36168429.0,
+    "lease_liabilities": 46461313.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "BIMAS/2025Q2.pdf",
+    "sha256": "bceadd12ba936449c9748239c0a6eebf7cdb13e8bab3c57695ac95e7ba985f4d"
+   }
+  },
+  {
+   "id": "kap_BIMAS_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "BIMAS",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-10",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 512767099.0,
+    "ebit_ytd": 8753607.0,
+    "da_ytd": 19944212.0,
+    "net_profit_ytd": 11366974.0,
+    "cash": 3582147.0,
+    "st_borrowings": 11228445.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 37623577.0,
+    "lease_liabilities": 48671621.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "BIMAS/2025Q3.pdf",
+    "sha256": "ed5bffa6743fab0a4bf2220cd435981f7e5400c76dafbaf82e9d7744e74b9108"
+   }
+  },
+  {
+   "id": "kap_BIMAS_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "BIMAS",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-03-10",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 721062506.0,
+    "ebit_ytd": 15946069.0,
+    "da_ytd": 26636836.0,
+    "net_profit_ytd": 18735256.0,
+    "cash": 3460632.0,
+    "st_borrowings": 13043946.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 39682422.0,
+    "lease_liabilities": 51855670.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "BIMAS/2025Q4.pdf",
+    "sha256": "644907d69c70291e90f4a5ce1d1290dfdfaed794d7e11f0b2f1af24ecd382152"
+   }
+  },
+  {
+   "id": "kap_BIMAS_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "BIMAS",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-05-11",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 212862328.0,
+    "ebit_ytd": 2539812.0,
+    "da_ytd": 7288393.0,
+    "net_profit_ytd": 6551167.0,
+    "cash": 4980275.0,
+    "st_borrowings": 14142152.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 43933015.0,
+    "lease_liabilities": 57248685.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "BIMAS/2026Q1.pdf",
+    "sha256": "7652d2dc42feda33949fd8c3dd5ba1accfcbe171dd76212976e9f1076236cf7e"
+   }
+  },
+  {
+   "id": "kap_BIMAS_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "BIMAS",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-17",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 449695235.0,
+    "ebit_ytd": 8049522.0,
+    "da_ytd": 15069784.0,
+    "net_profit_ytd": 15094815.0,
+    "cash": 4325864.0,
+    "st_borrowings": 15350001.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 47242509.0,
+    "lease_liabilities": 61852942.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "BIMAS/2026Q2.pdf",
+    "sha256": "d83c345763bb18613371411c697b93756163e83bd91ba4eef9076dddeba3b877"
+   }
+  },
+  {
+   "id": "kap_CCOLA_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "CCOLA",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-03-04",
+   "disclosure_date_source": "auditor_report_date",
+   "extracted_ytd": {
+    "revenue_ytd": null,
+    "ebit_ytd": 18885398.0,
+    "da_ytd": null,
+    "net_profit_ytd": 14813376.0,
+    "cash": 23253629.0,
+    "st_borrowings": 15151409.0,
+    "lt_current_portion": 6254373.0,
+    "lt_borrowings": 27738759.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "CCOLA/2024Q4.pdf",
+    "sha256": "5ff86335a751571df2c2517d5be53ca022e4e2e883a82cf77a3fc6dcd83eac18"
+   }
+  },
+  {
+   "id": "kap_CCOLA_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "CCOLA",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-05-06",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 36157897.0,
+    "ebit_ytd": 2873062.0,
+    "da_ytd": 1667160.0,
+    "net_profit_ytd": 1297357.0,
+    "cash": 21851788.0,
+    "st_borrowings": 20168278.0,
+    "lt_current_portion": 6643180.0,
+    "lt_borrowings": 29828396.0,
+    "lease_liabilities": 713834.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "CCOLA/2025Q1.pdf",
+    "sha256": "0b20d426c320df85ada35ffaf7bd11dd364d0f51e9b64dbaf8b63354df4b2021"
+   }
+  },
+  {
+   "id": "kap_CCOLA_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "CCOLA",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-08-11",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 86472087.0,
+    "ebit_ytd": 10294754.0,
+    "da_ytd": 3491835.0,
+    "net_profit_ytd": 6480908.0,
+    "cash": 22464627.0,
+    "st_borrowings": 20103561.0,
+    "lt_current_portion": 6288318.0,
+    "lt_borrowings": 31682374.0,
+    "lease_liabilities": 687389.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "CCOLA/2025Q2.pdf",
+    "sha256": "530ba3e66a87b992d3539e20c754c35afb1c32398d3a90399a18cc1c803e19dc"
+   }
+  },
+  {
+   "id": "kap_CCOLA_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "CCOLA",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 145161979.0,
+    "ebit_ytd": 20882763.0,
+    "da_ytd": 5516453.0,
+    "net_profit_ytd": 14194375.0,
+    "cash": 30324709.0,
+    "st_borrowings": 15782914.0,
+    "lt_current_portion": 7962014.0,
+    "lt_borrowings": 32597938.0,
+    "lease_liabilities": 916406.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "CCOLA/2025Q3.pdf",
+    "sha256": "dd71a2f567c207b909757d74daa64b653924c8700789ca6d60d64d020d169beb"
+   }
+  },
+  {
+   "id": "kap_CCOLA_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "CCOLA",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-03-03",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 187184514.0,
+    "ebit_ytd": 25155601.0,
+    "da_ytd": 7638182.0,
+    "net_profit_ytd": 14263308.0,
+    "cash": 26304193.0,
+    "st_borrowings": 13637971.0,
+    "lt_current_portion": 5940076.0,
+    "lt_borrowings": 32541456.0,
+    "lease_liabilities": 1417601.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "CCOLA/2025Q4.pdf",
+    "sha256": "9150eec6e9ca1044f7fad1917a98d144edc835713c63747e1ce302b246a7b81d"
+   }
+  },
+  {
+   "id": "kap_CCOLA_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "CCOLA",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-05-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 52368615.0,
+    "ebit_ytd": 6930963.0,
+    "da_ytd": 2298386.0,
+    "net_profit_ytd": 5300546.0,
+    "cash": 25256203.0,
+    "st_borrowings": 12722640.0,
+    "lt_current_portion": 5888214.0,
+    "lt_borrowings": 33049102.0,
+    "lease_liabilities": 1544974.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "CCOLA/2026Q1.pdf",
+    "sha256": "9f200e83f7cffe502884684ae3e63f8f64010416f4835feca7c35617b59a6344"
+   }
+  },
+  {
+   "id": "kap_CCOLA_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "CCOLA",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-10",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 123259712.0,
+    "ebit_ytd": 19468604.0,
+    "da_ytd": 5039899.0,
+    "net_profit_ytd": 14079887.0,
+    "cash": 27937916.0,
+    "st_borrowings": 18381765.0,
+    "lt_current_portion": 5892348.0,
+    "lt_borrowings": 33714818.0,
+    "lease_liabilities": 1539865.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "CCOLA/2026Q2.pdf",
+    "sha256": "5277cffaa258224b7fb43000290944973404ff643d9dde2e23b2998e5b68b43e"
+   }
+  },
+  {
+   "id": "kap_EREGL_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "EREGL",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-02-12",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 0.0,
+    "ebit_ytd": 642344.0,
+    "da_ytd": 269590.0,
+    "net_profit_ytd": 411265.0,
+    "cash": 1566313.0,
+    "st_borrowings": 743215.0,
+    "lt_current_portion": 295470.0,
+    "lt_borrowings": 2392984.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "EREGL/2024Q4.pdf",
+    "sha256": "ce321034385023c8ee8848406bb32951c1d2fb19e77c0b9a88c1e14903774539"
+   }
+  },
+  {
+   "id": "kap_EREGL_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "EREGL",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-04-29",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 1480213.0,
+    "ebit_ytd": 52453.0,
+    "da_ytd": 65470.0,
+    "net_profit_ytd": 12382.0,
+    "cash": 1863850.0,
+    "st_borrowings": 409500.0,
+    "lt_current_portion": 323983.0,
+    "lt_borrowings": 2653913.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "EREGL/2025Q1.pdf",
+    "sha256": "c6cb93b7b1760a48fe037eafe0ce9cd915cc946a00010abb01245c0e6d47303b"
+   }
+  },
+  {
+   "id": "kap_EREGL_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "EREGL",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-08-06",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 2537087.0,
+    "ebit_ytd": 99840.0,
+    "da_ytd": 133110.0,
+    "net_profit_ytd": 48519.0,
+    "cash": 2111099.0,
+    "st_borrowings": 380528.0,
+    "lt_current_portion": 339852.0,
+    "lt_borrowings": 2678038.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "EREGL/2025Q2.pdf",
+    "sha256": "052dbd42feeed09417738b5ccb6c3a9aee612233cbe781266d0f1bf426b2c3e0"
+   }
+  },
+  {
+   "id": "kap_EREGL_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "EREGL",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-10-20",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 3840617.0,
+    "ebit_ytd": 153833.0,
+    "da_ytd": 206455.0,
+    "net_profit_ytd": 65335.0,
+    "cash": 2353977.0,
+    "st_borrowings": 502633.0,
+    "lt_current_portion": 338702.0,
+    "lt_borrowings": 2689066.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "EREGL/2025Q3.pdf",
+    "sha256": "79c2a699bd809e81985b53319d6d31c81f14707bf95f2c0c079c5c914520cfa2"
+   }
+  },
+  {
+   "id": "kap_EREGL_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "EREGL",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-02-17",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 5298745.0,
+    "ebit_ytd": 252417.0,
+    "da_ytd": 286501.0,
+    "net_profit_ytd": 17611.0,
+    "cash": 2695176.0,
+    "st_borrowings": 558032.0,
+    "lt_current_portion": 374269.0,
+    "lt_borrowings": 2756660.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "EREGL/2025Q4.pdf",
+    "sha256": "667c374a0e77dce216ba9d8b6c56fa846336f9a518f7453ebd8ef3211066a0bb"
+   }
+  },
+  {
+   "id": "kap_EREGL_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "EREGL",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-04-28",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 1369214.0,
+    "ebit_ytd": 55682.0,
+    "da_ytd": 84332.0,
+    "net_profit_ytd": 9309.0,
+    "cash": 2791540.0,
+    "st_borrowings": 431752.0,
+    "lt_current_portion": 423351.0,
+    "lt_borrowings": 2644014.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "EREGL/2026Q1.pdf",
+    "sha256": "9c5b55ae821b9056a89a0a37b08318ac97de9c3c27297a10af8f2313435db9c2"
+   }
+  },
+  {
+   "id": "kap_EREGL_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "EREGL",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-06",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 2800608.0,
+    "ebit_ytd": 117713.0,
+    "da_ytd": 168633.0,
+    "net_profit_ytd": 207226.0,
+    "cash": 2604979.0,
+    "st_borrowings": 410733.0,
+    "lt_current_portion": 865189.0,
+    "lt_borrowings": 2176257.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "EREGL/2026Q2.pdf",
+    "sha256": "300c5412a817e88cc689c8ee58107692838650ccea6c0a5e664b76cc350a808c"
+   }
+  },
+  {
+   "id": "kap_FROTO_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "FROTO",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-02-17",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 594995138.0,
+    "ebit_ytd": 28984491.0,
+    "da_ytd": 10712444.0,
+    "net_profit_ytd": 38863566.0,
+    "cash": 22330114.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 122082642.0,
+    "lease_liabilities": 1674029.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "FROTO/2024Q4.pdf",
+    "sha256": "68a0d4aee956538a2bcc5c811e9ff77fab37c329b343832e0d843ed01fe53fa7"
+   }
+  },
+  {
+   "id": "kap_FROTO_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "FROTO",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-04-29",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 160901178.0,
+    "ebit_ytd": 7769906.0,
+    "da_ytd": 3506299.0,
+    "net_profit_ytd": 6487096.0,
+    "cash": 49385215.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 136779597.0,
+    "lease_liabilities": 1882497.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "FROTO/2025Q1.pdf",
+    "sha256": "4e86d7800adcea37c132d8ebbec96a432b1a202ae6d114ead5ea866720d57bce"
+   }
+  },
+  {
+   "id": "kap_FROTO_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "FROTO",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-07-30",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 365359745.0,
+    "ebit_ytd": 20228968.0,
+    "da_ytd": 7667450.0,
+    "net_profit_ytd": 12987561.0,
+    "cash": 56987878.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 145711164.0,
+    "lease_liabilities": 1906065.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "FROTO/2025Q2.pdf",
+    "sha256": "2b64ab5779e48a954fb85c24bfc40b9fd81cf349080b0cf3aebc31e9b0ef1f06"
+   }
+  },
+  {
+   "id": "kap_FROTO_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "FROTO",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-05",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 582360631.0,
+    "ebit_ytd": 30048633.0,
+    "da_ytd": 12383452.0,
+    "net_profit_ytd": 22363602.0,
+    "cash": 54529577.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 150316370.0,
+    "lease_liabilities": 1985672.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "FROTO/2025Q3.pdf",
+    "sha256": "3cad73154549e65d78fd00d6dd2a730dd863ba714f6677524a57a9df07b32ce4"
+   }
+  },
+  {
+   "id": "kap_FROTO_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "FROTO",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-02-09",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 830827933.0,
+    "ebit_ytd": 42603202.0,
+    "da_ytd": 17205394.0,
+    "net_profit_ytd": 33986135.0,
+    "cash": 63973964.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 161099933.0,
+    "lease_liabilities": 2067547.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "FROTO/2025Q4.pdf",
+    "sha256": "8a3be6dbd67eccdc0c8befb4d46d82156277dabe301031ff4e0e01ee8760b70b"
+   }
+  },
+  {
+   "id": "kap_FROTO_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "FROTO",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-05-05",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 192442597.0,
+    "ebit_ytd": 4938527.0,
+    "da_ytd": 5125519.0,
+    "net_profit_ytd": 5498818.0,
+    "cash": 56687663.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 160908366.0,
+    "lease_liabilities": 2217700.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "FROTO/2026Q1.pdf",
+    "sha256": "994c1f92a99915a102dab648fad39d7e76a6993af4e4b386e1ef73ef1a79404e"
+   }
+  },
+  {
+   "id": "kap_FROTO_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "FROTO",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 427069180.0,
+    "ebit_ytd": 11645149.0,
+    "da_ytd": 10403700.0,
+    "net_profit_ytd": 10336713.0,
+    "cash": 56042423.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 165847510.0,
+    "lease_liabilities": 2176893.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "FROTO/2026Q2.pdf",
+    "sha256": "13bd1ccb5e8b39e2643b0690e03e2c7df1a0b55de0b95f8c97005e5aef50149b"
+   }
+  },
+  {
+   "id": "kap_MGROS_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "MGROS",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-03-05",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 293779664.0,
+    "ebit_ytd": -9475735.0,
+    "da_ytd": 9977506.0,
+    "net_profit_ytd": 6538759.0,
+    "cash": 22524342.0,
+    "st_borrowings": 645792.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 16272191.0,
+    "lease_liabilities": 19887270.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "MGROS/2024Q4.pdf",
+    "sha256": "bc996f416ecefb38bd2dfde6b60f3d4199ff7763caeb9e40214f8c09b5dc1af6"
+   }
+  },
+  {
+   "id": "kap_MGROS_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "MGROS",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-05-07",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 78436533.0,
+    "ebit_ytd": -3033056.0,
+    "da_ytd": 3153255.0,
+    "net_profit_ytd": 1031606.0,
+    "cash": 19432912.0,
+    "st_borrowings": 494195.0,
+    "lt_current_portion": 4708503.0,
+    "lt_borrowings": 20153266.0,
+    "lease_liabilities": 24284940.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "MGROS/2025Q1.pdf",
+    "sha256": "3312553b479f584fcaa11d756306f5bcbdd2ffba11e90a49445f70acc3f7916c"
+   }
+  },
+  {
+   "id": "kap_MGROS_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "MGROS",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-08-12",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 174844068.0,
+    "ebit_ytd": -6434878.0,
+    "da_ytd": 6769351.0,
+    "net_profit_ytd": 1467356.0,
+    "cash": 22156503.0,
+    "st_borrowings": 153672.0,
+    "lt_current_portion": 5395339.0,
+    "lt_borrowings": 22003699.0,
+    "lease_liabilities": 26887363.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "MGROS/2025Q2.pdf",
+    "sha256": "b475cbd3fc52dba28a2f5b02802e7566f901bc04cfd82ca69cc438d505b17bc5"
+   }
+  },
+  {
+   "id": "kap_MGROS_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "MGROS",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-06",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 294847578.0,
+    "ebit_ytd": -6149562.0,
+    "da_ytd": 11326846.0,
+    "net_profit_ytd": 5610584.0,
+    "cash": 31034865.0,
+    "st_borrowings": 160249.0,
+    "lt_current_portion": 5659817.0,
+    "lt_borrowings": 25102544.0,
+    "lease_liabilities": 29477507.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "MGROS/2025Q3.pdf",
+    "sha256": "39b92636886d4ab5d22c3878bf0e565a92380c792c0b525c16ff6d56736355b8"
+   }
+  },
+  {
+   "id": "kap_MGROS_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "MGROS",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-03-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 412756429.0,
+    "ebit_ytd": -8252604.0,
+    "da_ytd": 16070079.0,
+    "net_profit_ytd": 6793533.0,
+    "cash": 27783954.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 6122845.0,
+    "lt_borrowings": 25678885.0,
+    "lease_liabilities": 31028725.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "MGROS/2025Q4.pdf",
+    "sha256": "dcedea96617d5cfb6d44b756a3ddc7380581c85f8a90d418aac2abfbd8a45811"
+   }
+  },
+  {
+   "id": "kap_MGROS_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "MGROS",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-05-05",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 109236956.0,
+    "ebit_ytd": -4668834.0,
+    "da_ytd": 5052928.0,
+    "net_profit_ytd": 1610250.0,
+    "cash": 28909924.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 4908821.0,
+    "lt_borrowings": 31631938.0,
+    "lease_liabilities": 35745587.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "MGROS/2026Q1.pdf",
+    "sha256": "00f563cc8db0eae3057d535d0298a68d534d13cee69cd4747684d88bd930e5c4"
+   }
+  },
+  {
+   "id": "kap_MGROS_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "MGROS",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-11",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 241298039.0,
+    "ebit_ytd": -10858537.0,
+    "da_ytd": 11276922.0,
+    "net_profit_ytd": 1078256.0,
+    "cash": 32550445.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 4974529.0,
+    "lt_borrowings": 34053178.0,
+    "lease_liabilities": 38204699.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "MGROS/2026Q2.pdf",
+    "sha256": "a2f99ae23a13bd2fda6ed55a8bedf26e4620bf12998cc7fe8653d534581a4b1e"
+   }
+  },
+  {
+   "id": "kap_PGSUS_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "PGSUS",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-03-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 111822522278.0,
+    "ebit_ytd": 20807220975.0,
+    "da_ytd": 12022188409.0,
+    "net_profit_ytd": 13285437677.0,
+    "cash": 46258554416.0,
+    "st_borrowings": 6321566673.0,
+    "lt_current_portion": 8017762712.0,
+    "lt_borrowings": 17261724196.0,
+    "lease_liabilities": 14911498531.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "PGSUS/2024Q4.pdf",
+    "sha256": "fd66b7b7cf50de33512826ac0d01cf11c24fdc2332bcec0bdaa127fd8804bee2"
+   }
+  },
+  {
+   "id": "kap_PGSUS_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "PGSUS",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-05-08",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 23587573014.0,
+    "ebit_ytd": -3905836375.0,
+    "da_ytd": 3699989707.0,
+    "net_profit_ytd": -2634620682.0,
+    "cash": 31241160946.0,
+    "st_borrowings": 3318914940.0,
+    "lt_current_portion": 8706107064.0,
+    "lt_borrowings": 18568424084.0,
+    "lease_liabilities": 16459063302.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "PGSUS/2025Q1.pdf",
+    "sha256": "15c38dab761265d5af3c232202b8ae4a4ffd27cb522b532649372a012fd85cf6"
+   }
+  },
+  {
+   "id": "kap_PGSUS_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "PGSUS",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-08-12",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 62013070053.0,
+    "ebit_ytd": -1315712846.0,
+    "da_ytd": 8118538537.0,
+    "net_profit_ytd": 2497837153.0,
+    "cash": 39529452848.0,
+    "st_borrowings": 2231094804.0,
+    "lt_current_portion": 5479769718.0,
+    "lt_borrowings": 21219145611.0,
+    "lease_liabilities": 18632990099.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "PGSUS/2025Q2.pdf",
+    "sha256": "cf49450edcbda70f807bbee1fff886474b00bd87b46cd88489359fcba84de69f"
+   }
+  },
+  {
+   "id": "kap_PGSUS_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "PGSUS",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-07",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 114405094895.0,
+    "ebit_ytd": 10872782738.0,
+    "da_ytd": 13250330204.0,
+    "net_profit_ytd": 13326667532.0,
+    "cash": 50433677329.0,
+    "st_borrowings": 11462002891.0,
+    "lt_current_portion": 2939818721.0,
+    "lt_borrowings": 23994846956.0,
+    "lease_liabilities": 21309111839.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "PGSUS/2025Q3.pdf",
+    "sha256": "0848f9b1586536d167d3c4f204a4da82024b741a38764c8ddf00149d741d9f5c"
+   }
+  },
+  {
+   "id": "kap_PGSUS_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "PGSUS",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-03-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 154127554444.0,
+    "ebit_ytd": 11707541095.0,
+    "da_ytd": 19015653952.0,
+    "net_profit_ytd": 13750218852.0,
+    "cash": 54845602666.0,
+    "st_borrowings": 21382990866.0,
+    "lt_current_portion": 2118530221.0,
+    "lt_borrowings": 25185679374.0,
+    "lease_liabilities": 23420791124.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "PGSUS/2025Q4.pdf",
+    "sha256": "319735cd6e455c49abe5a0f6ea06ea3a11afa08af2900d6abed53f6698288625"
+   }
+  },
+  {
+   "id": "kap_PGSUS_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "PGSUS",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-05-11",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 32760718.0,
+    "ebit_ytd": -4724610.0,
+    "da_ytd": 5676788.0,
+    "net_profit_ytd": -7758354.0,
+    "cash": 56606949.0,
+    "st_borrowings": 22579154.0,
+    "lt_current_portion": 2683694.0,
+    "lt_borrowings": 26043826.0,
+    "lease_liabilities": 23385627.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "PGSUS/2026Q1.pdf",
+    "sha256": "5c0d9b6bdae6edf9cc87e67ca98e31667fc313e62d240eb67f7dd7ea8e8fcda3"
+   }
+  },
+  {
+   "id": "kap_PGSUS_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "PGSUS",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-12",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 78468731.0,
+    "ebit_ytd": -6518123.0,
+    "da_ytd": 11683038.0,
+    "net_profit_ytd": -12551835.0,
+    "cash": 60232800.0,
+    "st_borrowings": 28524897.0,
+    "lt_current_portion": 2855506.0,
+    "lt_borrowings": 27848819.0,
+    "lease_liabilities": 24657455.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "PGSUS/2026Q2.pdf",
+    "sha256": "9e0ace0616ffd4626820d12b02dbe938d2427be3af651d1b6ca62a0ce800cddc"
+   }
+  },
+  {
+   "id": "kap_TCELL_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "TCELL",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-02-27",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 158854007.0,
+    "ebit_ytd": 35423511.0,
+    "da_ytd": 47426163.0,
+    "net_profit_ytd": 11086899.0,
+    "cash": 68934333.0,
+    "st_borrowings": 18581297.0,
+    "lt_current_portion": 33323798.0,
+    "lt_borrowings": 52435164.0,
+    "lease_liabilities": 1044893.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TCELL/2024Q4.pdf",
+    "sha256": "f3af796de22089f9e0032168b8c0e7178836cf57fc0c426c576441ec4742fdf5"
+   }
+  },
+  {
+   "id": "kap_TCELL_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "TCELL",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-05-09",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 45408937.0,
+    "ebit_ytd": 16577938.0,
+    "da_ytd": 12745528.0,
+    "net_profit_ytd": 3082110.0,
+    "cash": 108420529.0,
+    "st_borrowings": 18506275.0,
+    "lt_current_portion": 37440559.0,
+    "lt_borrowings": 94764674.0,
+    "lease_liabilities": 2256835.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TCELL/2025Q1.pdf",
+    "sha256": "2cce4ea2143e9448d5c04d0cd1e34b86719d65302056ef689d292093541fb8f9"
+   }
+  },
+  {
+   "id": "kap_TCELL_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "TCELL",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-08-13",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 98431799.0,
+    "ebit_ytd": 37414400.0,
+    "da_ytd": 27778859.0,
+    "net_profit_ytd": 7655157.0,
+    "cash": 116601097.0,
+    "st_borrowings": 15914566.0,
+    "lt_current_portion": 43522435.0,
+    "lt_borrowings": 113421078.0,
+    "lease_liabilities": 2798511.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TCELL/2025Q2.pdf",
+    "sha256": "f83d6694f2ea536888e77017d1a91d3bfaa8d6b8d02ad7af76adf648045080e5"
+   }
+  },
+  {
+   "id": "kap_TCELL_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "TCELL",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-06",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 162434767.0,
+    "ebit_ytd": 55506472.0,
+    "da_ytd": 45655707.0,
+    "net_profit_ytd": 13613068.0,
+    "cash": 122346742.0,
+    "st_borrowings": 16722305.0,
+    "lt_current_portion": 45936966.0,
+    "lt_borrowings": 118621574.0,
+    "lease_liabilities": 3062161.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TCELL/2025Q3.pdf",
+    "sha256": "68732c990168943854d2067c98b2f4104f2b9d8462234a0d7e3205877b713398"
+   }
+  },
+  {
+   "id": "kap_TCELL_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "TCELL",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-03-05",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 229014273.0,
+    "ebit_ytd": 73436427.0,
+    "da_ytd": 63349421.0,
+    "net_profit_ytd": 17791410.0,
+    "cash": 91828282.0,
+    "st_borrowings": 13460058.0,
+    "lt_current_portion": 22456208.0,
+    "lt_borrowings": 122732860.0,
+    "lease_liabilities": 2964188.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TCELL/2025Q4.pdf",
+    "sha256": "0019a2a3227abc66aed90059717ffae7db9c049e2292d121b9d8dac23d505257"
+   }
+  },
+  {
+   "id": "kap_TCELL_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "TCELL",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-05-11",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 64950588.0,
+    "ebit_ytd": 12795050.0,
+    "da_ytd": 17855974.0,
+    "net_profit_ytd": 4634415.0,
+    "cash": 95773428.0,
+    "st_borrowings": 12690041.0,
+    "lt_current_portion": 25593720.0,
+    "lt_borrowings": 168063094.0,
+    "lease_liabilities": 3835615.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TCELL/2026Q1.pdf",
+    "sha256": "8371b075d79190768dd564713fa19809dd69ad92c9693339f61f9b263195a7b1"
+   }
+  },
+  {
+   "id": "kap_TCELL_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "TCELL",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-13",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 137467389.0,
+    "ebit_ytd": 26449330.0,
+    "da_ytd": 39666159.0,
+    "net_profit_ytd": 10194669.0,
+    "cash": 89275018.0,
+    "st_borrowings": 13498104.0,
+    "lt_current_portion": 23569175.0,
+    "lt_borrowings": 175000895.0,
+    "lease_liabilities": 3968775.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TCELL/2026Q2.pdf",
+    "sha256": "ec4112287dbe3eb9976cf43f76f1bac99cb2a2dce3738897f4cf35766dd3272e"
+   }
+  },
+  {
+   "id": "kap_THYAO_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "THYAO",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-02-27",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 745430.0,
+    "ebit_ytd": 80393.0,
+    "da_ytd": 72306.0,
+    "net_profit_ytd": 113357.0,
+    "cash": 95992.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 76815.0,
+    "lease_liabilities": 422924.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "THYAO/2024Q4.pdf",
+    "sha256": "92f44d79cad60da7b97d4da030eb5ef82c413a6e737889ba7570955c62ee55ec"
+   }
+  },
+  {
+   "id": "kap_THYAO_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "THYAO",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-04-28",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 176712.0,
+    "ebit_ytd": -2531.0,
+    "da_ytd": 20413.0,
+    "net_profit_ytd": -4384.0,
+    "cash": 88821.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 71595.0,
+    "lease_liabilities": 466075.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "THYAO/2025Q1.pdf",
+    "sha256": "90dcdccc2def75fe99fef21080392a920fc8b8199d072936ee6a3ddad1d3d252"
+   }
+  },
+  {
+   "id": "kap_THYAO_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "THYAO",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-08-05",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 408036.0,
+    "ebit_ytd": 24529.0,
+    "da_ytd": 42953.0,
+    "net_profit_ytd": 24935.0,
+    "cash": 98791.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 59776.0,
+    "lease_liabilities": 524711.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "THYAO/2025Q2.pdf",
+    "sha256": "661a9f683b06e542c7eb4334cb745d410fd8cb0d465e224db06a0ec0fd59e340"
+   }
+  },
+  {
+   "id": "kap_THYAO_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "THYAO",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-06",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 690825.0,
+    "ebit_ytd": 67607.0,
+    "da_ytd": 67762.0,
+    "net_profit_ytd": 80951.0,
+    "cash": 100325.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 73711.0,
+    "lease_liabilities": 570796.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "THYAO/2025Q3.pdf",
+    "sha256": "fa44f26fcbcf87360add01daf822eb0adc48b60c6f63ce9226d1b230cc711005"
+   }
+  },
+  {
+   "id": "kap_THYAO_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "THYAO",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-03-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 955472.0,
+    "ebit_ytd": 90129.0,
+    "da_ytd": 94682.0,
+    "net_profit_ytd": 118117.0,
+    "cash": 86035.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 125277.0,
+    "lease_liabilities": 638976.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "THYAO/2025Q4.pdf",
+    "sha256": "78283347bef012895eab00ef3c7aeee678824b49a41ae18daf68c727e603824f"
+   }
+  },
+  {
+   "id": "kap_THYAO_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "THYAO",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-04-29",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 257961.0,
+    "ebit_ytd": -2451.0,
+    "da_ytd": 28358.0,
+    "net_profit_ytd": 9856.0,
+    "cash": 71141.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 148025.0,
+    "lease_liabilities": 665930.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "THYAO/2026Q1.pdf",
+    "sha256": "f6c6722bb667d806e4b20b5ec9a13f6c4bbb7738774c20f8d4d525e35e164c30"
+   }
+  },
+  {
+   "id": "kap_THYAO_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "THYAO",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 585069.0,
+    "ebit_ytd": -4536.0,
+    "da_ytd": 58665.0,
+    "net_profit_ytd": 18766.0,
+    "cash": 80346.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 171383.0,
+    "lease_liabilities": 742851.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "THYAO/2026Q2.pdf",
+    "sha256": "95beca35c11da68b62b0d961aa07059160319edcd6cea2b7b7497506b7a4ae93"
+   }
+  },
+  {
+   "id": "kap_TOASO_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "TOASO",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-02-12",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 120266571.0,
+    "ebit_ytd": 4122373.0,
+    "da_ytd": 6199595.0,
+    "net_profit_ytd": 5221439.0,
+    "cash": 19715820.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 10937109.0,
+    "lt_borrowings": 16963850.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TOASO/2024Q4.pdf",
+    "sha256": "a66e657a15a97eaf8cd60583fb29b06ebc088f5312eb909ee1e145e593432a61"
+   }
+  },
+  {
+   "id": "kap_TOASO_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "TOASO",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-04-28",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 24204042.0,
+    "ebit_ytd": -874752.0,
+    "da_ytd": 1658811.0,
+    "net_profit_ytd": -140454.0,
+    "cash": 26525843.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 12053820.0,
+    "lt_borrowings": 17603396.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TOASO/2025Q1.pdf",
+    "sha256": "a7c2897de12d6b052b98ac264835c744d0b9e028001a434cfc32f3873655ca64"
+   }
+  },
+  {
+   "id": "kap_TOASO_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "TOASO",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-07-28",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 95098254.0,
+    "ebit_ytd": -665950.0,
+    "da_ytd": 3537256.0,
+    "net_profit_ytd": 1602173.0,
+    "cash": 15984204.0,
+    "st_borrowings": 3467281.0,
+    "lt_current_portion": 12265287.0,
+    "lt_borrowings": 20201419.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TOASO/2025Q2.pdf",
+    "sha256": "8191d56950244372e25684b5d8a0a62f0d507d5607a65b0dc4cf44d3050f3e41"
+   }
+  },
+  {
+   "id": "kap_TOASO_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "TOASO",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-03",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 189458771.0,
+    "ebit_ytd": -482036.0,
+    "da_ytd": 5753385.0,
+    "net_profit_ytd": 2930752.0,
+    "cash": 18738540.0,
+    "st_borrowings": 467281.0,
+    "lt_current_portion": 14543886.0,
+    "lt_borrowings": 23355172.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TOASO/2025Q3.pdf",
+    "sha256": "45898cf3bfe4045b73f932f8581a8d7ee8c300d8c40b0b67a7255b9a84063995"
+   }
+  },
+  {
+   "id": "kap_TOASO_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "TOASO",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-02-09",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 319413508.0,
+    "ebit_ytd": 3605149.0,
+    "da_ytd": 7480950.0,
+    "net_profit_ytd": 8353933.0,
+    "cash": 19967321.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 16253582.0,
+    "lt_borrowings": 37415420.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TOASO/2025Q4.pdf",
+    "sha256": "d80fdb1adad4dff9407f7f1ae4a48d629f4876be0fe34010e3ace62970bccf3d"
+   }
+  },
+  {
+   "id": "kap_TOASO_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "TOASO",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-05-05",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 95109919.0,
+    "ebit_ytd": 1683783.0,
+    "da_ytd": 1355786.0,
+    "net_profit_ytd": 2988567.0,
+    "cash": 20991351.0,
+    "st_borrowings": 1200000.0,
+    "lt_current_portion": 23913802.0,
+    "lt_borrowings": 44258949.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TOASO/2026Q1.pdf",
+    "sha256": "73e9e7c37f599efaf0373aea46b78f088ad59f7c05e99838191ae3f7a412e63d"
+   }
+  },
+  {
+   "id": "kap_TOASO_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "TOASO",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-07-29",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 201797108.0,
+    "ebit_ytd": 2884353.0,
+    "da_ytd": 2982637.0,
+    "net_profit_ytd": 6290532.0,
+    "cash": 11008676.0,
+    "st_borrowings": 1200000.0,
+    "lt_current_portion": 28374156.0,
+    "lt_borrowings": 40790577.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TOASO/2026Q2.pdf",
+    "sha256": "f194fcf8fac20298a56e89274a53b060f330eadce6fb68dab08f4dabb473683b"
+   }
+  },
+  {
+   "id": "kap_TTKOM_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "TTKOM",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-03-10",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 161650927.0,
+    "ebit_ytd": 25284520.0,
+    "da_ytd": 36020114.0,
+    "net_profit_ytd": 8456145.0,
+    "cash": 7532247.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 66368381.0,
+    "lease_liabilities": 1592805.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TTKOM/2024Q4.pdf",
+    "sha256": "9d2f474763a53251c2cc0d14696015333bb9af74beef8faf520217dfdce54688"
+   }
+  },
+  {
+   "id": "kap_TTKOM_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "TTKOM",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-05-07",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 45596373.0,
+    "ebit_ytd": 7405464.0,
+    "da_ytd": 9678815.0,
+    "net_profit_ytd": 5134196.0,
+    "cash": 7915173.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 59460501.0,
+    "lease_liabilities": 2059521.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TTKOM/2025Q1.pdf",
+    "sha256": "96ee364e1262b4b4cc3a5d18188e644f93e6e1562406432c807782932fcd5136"
+   }
+  },
+  {
+   "id": "kap_TTKOM_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "TTKOM",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-08-13",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 98761555.0,
+    "ebit_ytd": 18085276.0,
+    "da_ytd": 20378627.0,
+    "net_profit_ytd": 10315820.0,
+    "cash": 9591977.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 60344742.0,
+    "lease_liabilities": 2335433.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TTKOM/2025Q2.pdf",
+    "sha256": "456c76673456b113fd022c414292f9033cb14d8ec0d4319bd5e10f3d78530456"
+   }
+  },
+  {
+   "id": "kap_TTKOM_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "TTKOM",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-11-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 165695132.0,
+    "ebit_ytd": 34580208.0,
+    "da_ytd": 32832791.0,
+    "net_profit_ytd": 21332614.0,
+    "cash": 14525253.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 66219326.0,
+    "lease_liabilities": 2510247.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TTKOM/2025Q3.pdf",
+    "sha256": "b41139efd6d72fa7eb93f530e56e8f92333098bbe6f1d9a092f9ec36f5bae293"
+   }
+  },
+  {
+   "id": "kap_TTKOM_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "TTKOM",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-03-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 242228623.0,
+    "ebit_ytd": 48723669.0,
+    "da_ytd": 47201871.0,
+    "net_profit_ytd": 22980532.0,
+    "cash": 66941659.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 119860580.0,
+    "lease_liabilities": 2650436.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TTKOM/2025Q4.pdf",
+    "sha256": "272930e5735874e2533084ee7229834ba785a4978b9bd3076589f633b9b337af"
+   }
+  },
+  {
+   "id": "kap_TTKOM_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "TTKOM",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-05-06",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 64858147.0,
+    "ebit_ytd": 12415060.0,
+    "da_ytd": 14703641.0,
+    "net_profit_ytd": 10457008.0,
+    "cash": 30437489.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 136459598.0,
+    "lease_liabilities": 2729863.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TTKOM/2026Q1.pdf",
+    "sha256": "bd267523f3662857bb3b8a59d746a0a2d3c796e2cbdb45dce254a72a4edb3b15"
+   }
+  },
+  {
+   "id": "kap_TTKOM_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "TTKOM",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-05",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 142212593.0,
+    "ebit_ytd": 24757322.0,
+    "da_ytd": 32545764.0,
+    "net_profit_ytd": 17152145.0,
+    "cash": 25640597.0,
+    "st_borrowings": 0.0,
+    "lt_current_portion": 0.0,
+    "lt_borrowings": 139218637.0,
+    "lease_liabilities": 2842304.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TTKOM/2026Q2.pdf",
+    "sha256": "53fa6dae93c735d01656a1da18ee1ff4bddd39283cb6b6e655d101f780b3574c"
+   }
+  },
+  {
+   "id": "kap_TUPRS_2024Q4",
+   "type": "kap_financial_report",
+   "ticker": "TUPRS",
+   "period": "2024Q4",
+   "quarter_end": "2024-12-31",
+   "disclosure_date": "2025-02-17",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 810385588.0,
+    "ebit_ytd": 35709966.0,
+    "da_ytd": 9616110.0,
+    "net_profit_ytd": 19033640.0,
+    "cash": 73534436.0,
+    "st_borrowings": 3769795.0,
+    "lt_current_portion": 5284142.0,
+    "lt_borrowings": 9934698.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TUPRS/2024Q4.pdf",
+    "sha256": "c7d13ec609f3e4007063a65f70d603d80ee3b870a2e71599d7607a987f2e546a"
+   }
+  },
+  {
+   "id": "kap_TUPRS_2025Q1",
+   "type": "kap_financial_report",
+   "ticker": "TUPRS",
+   "period": "2025Q1",
+   "quarter_end": "2025-03-31",
+   "disclosure_date": "2025-04-29",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 158623387.0,
+    "ebit_ytd": 3890957.0,
+    "da_ytd": 3003126.0,
+    "net_profit_ytd": 120127.0,
+    "cash": 46670970.0,
+    "st_borrowings": 4648972.0,
+    "lt_current_portion": 5196919.0,
+    "lt_borrowings": 11228926.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TUPRS/2025Q1.pdf",
+    "sha256": "6c22fbe2d8cfa75eb87fa86ce824b7f57b1fc3db6bba78a4e0959eb25301c15d"
+   }
+  },
+  {
+   "id": "kap_TUPRS_2025Q2",
+   "type": "kap_financial_report",
+   "ticker": "TUPRS",
+   "period": "2025Q2",
+   "quarter_end": "2025-06-30",
+   "disclosure_date": "2025-07-29",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 351315503.0,
+    "ebit_ytd": 13746919.0,
+    "da_ytd": 6475209.0,
+    "net_profit_ytd": 9069450.0,
+    "cash": 90351730.0,
+    "st_borrowings": 2639005.0,
+    "lt_current_portion": 6755538.0,
+    "lt_borrowings": 31975783.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TUPRS/2025Q2.pdf",
+    "sha256": "c4edca3c44a64e8206e26ef29ae5f06dbea2c4402bf4412f541c683ae757c7be"
+   }
+  },
+  {
+   "id": "kap_TUPRS_2025Q3",
+   "type": "kap_financial_report",
+   "ticker": "TUPRS",
+   "period": "2025Q3",
+   "quarter_end": "2025-09-30",
+   "disclosure_date": "2025-10-31",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 598344047.0,
+    "ebit_ytd": 29903965.0,
+    "da_ytd": 10448400.0,
+    "net_profit_ytd": 22006621.0,
+    "cash": 117091013.0,
+    "st_borrowings": 1789675.0,
+    "lt_current_portion": 12770716.0,
+    "lt_borrowings": 28099968.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TUPRS/2025Q3.pdf",
+    "sha256": "755748d3695229ce96bf833893a7b04e52d3703bb4ea2854e1bd449d9e673b44"
+   }
+  },
+  {
+   "id": "kap_TUPRS_2025Q4",
+   "type": "kap_financial_report",
+   "ticker": "TUPRS",
+   "period": "2025Q4",
+   "quarter_end": "2025-12-31",
+   "disclosure_date": "2026-02-06",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 830356131.0,
+    "ebit_ytd": 41646897.0,
+    "da_ytd": 14625862.0,
+    "net_profit_ytd": 29872672.0,
+    "cash": 107237211.0,
+    "st_borrowings": 8957100.0,
+    "lt_current_portion": 12863610.0,
+    "lt_borrowings": 28428775.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TUPRS/2025Q4.pdf",
+    "sha256": "854b0c970148393daa0f82f9e237aea361701cce1fcd0b3b7ba38ad8e5938b82"
+   }
+  },
+  {
+   "id": "kap_TUPRS_2026Q1",
+   "type": "kap_financial_report",
+   "ticker": "TUPRS",
+   "period": "2026Q1",
+   "quarter_end": "2026-03-31",
+   "disclosure_date": "2026-05-06",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 258253850.0,
+    "ebit_ytd": 11392484.0,
+    "da_ytd": 4139357.0,
+    "net_profit_ytd": 3815100.0,
+    "cash": 129900408.0,
+    "st_borrowings": 7000315.0,
+    "lt_current_portion": 12376150.0,
+    "lt_borrowings": 35817792.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TUPRS/2026Q1.pdf",
+    "sha256": "0404b24b00407bf279f1428c16d1c9eb82d015a75bf8a28e1a8397e219d2c864"
+   }
+  },
+  {
+   "id": "kap_TUPRS_2026Q2",
+   "type": "kap_financial_report",
+   "ticker": "TUPRS",
+   "period": "2026Q2",
+   "quarter_end": "2026-06-30",
+   "disclosure_date": "2026-08-04",
+   "disclosure_date_source": "board_approval",
+   "extracted_ytd": {
+    "revenue_ytd": 662788010.0,
+    "ebit_ytd": 59025244.0,
+    "da_ytd": 8872312.0,
+    "net_profit_ytd": 50272473.0,
+    "cash": 195840940.0,
+    "st_borrowings": 17579248.0,
+    "lt_current_portion": 14178331.0,
+    "lt_borrowings": 36443100.0,
+    "lease_liabilities": 0.0
+   },
+   "source": {
+    "provider": "KAP (Public Disclosure Platform) financial report",
+    "file": "TUPRS/2026Q2.pdf",
+    "sha256": "c0008dac8736ea0cef208cf415f77c9321775236c16c078eaec42585cf76abc0"
+   }
+  }
+ ],
+ "counts": {
+  "documents": 16,
+  "kap_reports": 91
+ }
+}
