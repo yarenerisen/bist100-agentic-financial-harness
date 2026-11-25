@@ -10,6 +10,7 @@ Three ways to train, all using `training/finetune_qlora.py` (QLoRA, loss on assi
 
 | Where | Notes |
 |---|---|
+| **Local GPU, one command** (≥ 16 GB VRAM, Linux/WSL2) | `bash bist_llm/training/train_local.sh`: setup, smoke test, training, evaluation, traces and manifest; re-run to resume |
 | Local NVIDIA GPU (≥ 8 GB) | Tested on an RTX 4070 Laptop GPU (8 GB): Qwen2.5-3B, bf16, `--liger`, 2 epochs ≈ 3 h 50 min |
 | Google Colab (free T4) | Open `notebooks/colab_finetune.ipynb` (File → Open notebook → GitHub tab → repo URL) and run the cells in order. Checkpoints go to Google Drive; after a disconnect run cells 1–3 again and continue with `--resume` |
 | Kaggle (T4 x2) — **team default: Qwen3-8B** | Open `notebooks/kaggle_finetune.ipynb`. Choose T4, not P100 (`--liger` needs compute capability ≥ 7.0). Use Save & Run All for the long run (≈ 3 h per epoch). Add `--load-4bit` when evaluating 8B |
