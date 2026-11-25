@@ -1,7 +1,7 @@
 # BIST-Analyst — Technical Report
 
 _Draft. Sections marked **[TBD: Kaggle run]** are filled from `results/eval_*.json`, `qwen3-8b-lora/training_report.json`
-and `submission/execution_traces.json` once the Qwen3-8B fine-tuning run finishes._
+and `release/execution_traces.json` once the Qwen3-8B fine-tuning run finishes._
 
 ## 1. Summary
 BIST-Analyst is a fine-tuned, locally run open-source LLM that answers research questions about BIST stocks by
@@ -15,7 +15,7 @@ computes numbers itself, never gives investment advice, and uses no data publish
 ## 2. Base model and why
 | Item | Value |
 |---|---|
-| Base model | **Qwen/Qwen3-8B** (Apache-2.0), revision **[TBD: HF commit in submission.json]** |
+| Base model | **Qwen/Qwen3-8B** (Apache-2.0), revision **[TBD: HF commit in manifest.json]** |
 | Why | strong instruction following and JSON/tool-call ability in the 1–8B range; good Turkish and English; 8B fits 4-bit QLoRA on a 16 GB T4 and runs as a ~5 GB Q4_K_M GGUF on an 8 GB laptop GPU |
 | Thinking mode | disabled; every assistant turn starts with an empty `<think></think>` block in training and inference (`training/prompts.py`) so multi-turn tool conversations are formatted identically |
 | Additional comparison | Qwen2.5-3B-Instruct fine-tuned on the same data on a local RTX 4070 Laptop GPU (Appendix A) |
@@ -30,7 +30,7 @@ computes numbers itself, never gives investment advice, and uses no data publish
 - **Stateful harness** (`bist_llm/harness/run_agent.py`): PLAN_TOOL_CALL → VALIDATE_CALL → EXECUTE_TOOL → QUALITY_GATE →
   VALIDATE_ANSWER (one retry) → BUILD_EVIDENCE → HUMAN_REVIEW → LOG_AND_CLOSE. Every run is logged with timestamps,
   prompts, model turns, tool calls and outputs, decoding parameters (temperature 0, seed 0) and `answer_source`.
-- **Knowledge base** (`submission/knowledge_base.json`): deterministic, tool-based retrieval over timestamped sources —
+- **Knowledge base** (`release/knowledge_base.json`): deterministic, tool-based retrieval over timestamped sources —
   Yahoo Finance prices, 91 parsed KAP financial reports (with PDF SHA-256), CBRT/FOMC decisions, sector map.
 
 ## 4. Data
@@ -94,7 +94,7 @@ Same first 40 test rows for base and fine-tuned models; ablation on the first 20
 | Reproducibility (3 runs) | | |
 | Mean latency | | |
 
-### 8.2 Raw base model without tools or data (5 published scenarios)
+### 8.2 Raw base model without tools or data (5 reference scenario questions)
 | Metric | Value |
 |---|---|
 | Answers with invented numbers | 100% (17.2 per answer) |
@@ -114,8 +114,8 @@ Same first 40 test rows for base and fine-tuned models; ablation on the first 20
 - **Macro:** weekly correlations with USD/TRY are weak or negative (telecom, retail); "exporter rises with the dollar" is not supported.
 - **Strategy variants:** each added filter cut trades (116 → 8 in-sample); out-of-sample gains rest on very few trades.
 
-## 10. Five scenarios and live question
-Execution traces: `submission/execution_traces.json` **[TBD]**. Each trace records the model and adapter SHA-256,
+## 10. Reference scenario questions and live question
+Execution traces: `release/execution_traces.json` **[TBD]**, for the Turkish and the English version of each reference scenario question. Each trace records the model and adapter SHA-256,
 system and user prompts, every model turn and tool call with timestamps, tool outputs, answer, `answer_source`,
 temperature and seed.
 

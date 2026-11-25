@@ -1,8 +1,8 @@
-"""Builds submission/knowledge_base.json: the documents the system retrieves from, with source metadata and SHA-256.
+"""Builds release/knowledge_base.json: the documents the system retrieves from, with source metadata and SHA-256.
 
 Retrieval in this system is deterministic and tool-based (no vector store): every tool reads specific knowledge items
 (listed under `used_by_tools`), so each number in an answer can be traced to a document below.
-Usage (from bist_llm/): python -m submission.build_knowledge_base [--pdf-dir ../../raw_fin/data_econ]"""
+Usage (from bist_llm/): python -m release.build_knowledge_base [--pdf-dir ../../raw_fin/data_econ]"""
 import argparse, hashlib, json, sys, time
 from pathlib import Path
 import pandas as pd
@@ -91,7 +91,7 @@ def build(pdf_dir=None):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--pdf-dir", default=None, help="folder with <TICKER>/<YYYYQn>.pdf to hash the original reports")
-    ap.add_argument("--out", default=str(ROOT / "submission" / "knowledge_base.json"))
+    ap.add_argument("--out", default=str(ROOT / "release" / "knowledge_base.json"))
     a = ap.parse_args()
     kb = build(a.pdf_dir)
     Path(a.out).write_text(json.dumps(kb, ensure_ascii=False, indent=1, default=str))

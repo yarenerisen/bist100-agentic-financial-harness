@@ -82,15 +82,17 @@ class HFBackend:
         if load_4bit:   # fits a 7B model on a 16 GB T4
             from transformers import BitsAndBytesConfig
             kw["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16)
+        # one device: avoids "Expected all tensors to be on the same device" when several GPUs are visible
+        dmap = {"": 0} if torch.cuda.is_available() else None
         adapter = Path(path) / "adapter_config.json"
         if adapter.exists():   # LoRA adapter directory: load base model + adapter without merging
             from peft import PeftModel
             base = json.loads(adapter.read_text())["base_model_name_or_path"]
             self.tok = AutoTokenizer.from_pretrained(path)
-            self.model = PeftModel.from_pretrained(AutoModelForCausalLM.from_pretrained(base, torch_dtype=torch.float16, device_map="auto", **kw), path)
+            self.model = PeftModel.from_pretrained(AutoModelForCausalLM.from_pretrained(base, torch_dtype=torch.float16, device_map=dmap, **kw), path)
         else:
             self.tok = AutoTokenizer.from_pretrained(path)
-            self.model = AutoModelForCausalLM.from_pretrained(path, torch_dtype=torch.float16, device_map="auto", **kw)
+            self.model = AutoModelForCausalLM.from_pretrained(path, torch_dtype=torch.float16, device_map=dmap, **kw)
         self.model.eval()
         self.style = chat_style(path + " " + str(getattr(self.tok, "chat_template", "")))
         self.torch = torch

@@ -1,6 +1,6 @@
 {
  "name": "BIST-Analyst knowledge base",
- "built_at": "2026-11-25T14:19:14+0300",
+ "built_at": "2026-11-25T14:39:56+0300",
  "analysis_date": "2026-09-10",
  "retrieval": "deterministic tool-based retrieval over structured, timestamped sources (no vector store); point-in-time filters ensure nothing after 2026-09-10 is returned",
  "documents": [

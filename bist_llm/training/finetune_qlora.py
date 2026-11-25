@@ -30,6 +30,7 @@ ap.add_argument("--liger", action="store_true", help="fused linear+cross-entropy
 a = ap.parse_args()
 
 import torch
+# QLoRA + Liger need every tensor on one device: on multi-GPU machines (Kaggle T4 x2) train on GPU 0 only
 from transformers import (AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, Trainer, TrainingArguments,
                           DataCollatorForSeq2Seq)
 
@@ -101,7 +102,7 @@ if a.liger:
     print(f"liger kernels applied ({mt})")
 bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
 model = AutoModelForCausalLM.from_pretrained(
-    a.model, device_map="auto", torch_dtype=torch.bfloat16 if bf16 else torch.float16,
+    a.model, device_map={"": 0} if torch.cuda.is_available() else None, torch_dtype=torch.bfloat16 if bf16 else torch.float16,
     quantization_config=BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True,
                                            bnb_4bit_compute_dtype=torch.bfloat16 if bf16 else torch.float16))
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
