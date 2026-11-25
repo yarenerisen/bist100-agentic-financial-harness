@@ -108,7 +108,7 @@ def safe_fallback(reason, lang_tr):
 
 
 RAW_SYSTEM = "You are a financial analysis assistant for Borsa Istanbul stocks. Answer the question using the data provided."
-MODES = {  # harness ablation (Section 30)
+MODES = {  # harness ablation levels
     "A": "raw LLM: data passed as text, no tools, no checks",
     "B": "LLM + tools: tool loop, no call/answer validation",
     "C": "tools + stateful harness: validated calls, allowed tools per state, call limit",

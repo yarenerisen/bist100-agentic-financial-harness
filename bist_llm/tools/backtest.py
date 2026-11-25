@@ -117,7 +117,7 @@ def run_strategy_backtest(strategy, tickers, start="2024-01-01", end="2026-09-10
     return out
 
 
-# ------------------------------------------------------------------ strategy variants A-E (Section 29)
+# ------------------------------------------------------------------ strategy variants A-E
 def _pit_fundamental_improving(ticker, idx):
     """Point-in-time flag: latest statement disclosed on/before t had a higher EBITDA margin than the previous one."""
     from .macro_fund import FUND_CSV

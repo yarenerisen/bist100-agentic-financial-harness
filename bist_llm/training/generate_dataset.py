@@ -666,14 +666,14 @@ def s8_events(lang, split, tickers):
 def s9_speech(lang, split, tickers):
     topic = rng.choice(["inflation", "rates", "valuation", "fx"])
     q = L(lang, rng.choice([f"What did the approved finance commentators say about {topic}? Are their numeric claims verified?",
-                            f"Summarise expert commentary on {topic} from the instructor-approved videos."]),
+                            f"Summarise expert commentary on {topic} from the pre-approved videos."]),
           rng.choice([f"Onaylı finans yorumcuları {topic} hakkında ne söyledi? Sayısal iddiaları doğrulanmış mı?",
-                      f"Hocanın onayladığı videolardan {topic} üzerine uzman yorumlarını özetle."]))
+                      f"Onaylanmış videolardan {topic} üzerine uzman yorumlarını özetle."]))
     c = Conv(lang, q)
     r = c.call("get_speech_features", {"topic": topic})
     return c.final("INVESTIGATE", [L(lang, "The speech-intelligence layer returned no transcript segments for this topic.", "Konuşma analizi katmanı bu konu için transkript bölümü döndürmedi.")],
-                   L(lang, "No instructor-approved video transcripts are loaded, so expert commentary cannot be summarised; commentary would be contextual evidence, not ground truth. ",
-                     "Hocanın onayladığı video transkriptleri yüklü değil, bu yüzden uzman yorumu özetlenemiyor; yorumlar zaten doğrulanmış gerçek değil, bağlamsal kanıttır. ") + warn_text(lang, r["warnings"]))
+                   L(lang, "No pre-approved video transcripts are loaded, so expert commentary cannot be summarised; commentary would be contextual evidence, not ground truth. ",
+                     "Onaylanmış video transkriptleri yüklü değil, bu yüzden uzman yorumu özetlenemiyor; yorumlar zaten doğrulanmış gerçek değil, bağlamsal kanıttır. ") + warn_text(lang, r["warnings"]))
 
 
 def s10_index(lang, split, tickers):

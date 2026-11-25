@@ -1,4 +1,4 @@
-"""Evidence bundle (Section 25): full observed context vs. the committed evidence set actually used in the answer."""
+"""Evidence bundle: full observed context vs. the committed evidence set actually used in the answer."""
 import json, re
 from harness.validate import NUM
 

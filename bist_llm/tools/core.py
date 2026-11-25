@@ -10,7 +10,7 @@ CUTOFF = pd.Timestamp("2026-09-10")
 DATA = Path(__file__).resolve().parent.parent / "data" / "prices.parquet"
 EXCLUDE: list[str] = []  # tickers removed from the study universe (fill in when announced)
 
-# Simplified sector map (coursework). First 30 = official study universe; others added so
+# Simplified sector map. First 30 = official study universe; others added so
 # questions about peers (e.g. GARAN, ISCTR, YKBNK) can be answered.
 SECTORS = {
     "banking": ["AKBNK", "GARAN", "ISCTR", "YKBNK", "HALKB", "VAKBN", "TSKB", "SKBNK"],

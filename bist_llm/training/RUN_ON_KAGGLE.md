@@ -1,61 +1,70 @@
-# Eğitim ve çalıştırma adımları (Kişi B)
+# Training and running the model
 
-> **Kaggle hesabı yoksa:** Google Colab kullan. `notebooks/colab_finetune.ipynb` dosyasını Colab'da aç (File → Open notebook → GitHub sekmesi → repo linki) ve hücreleri sırayla çalıştır. Kesinti olursa `--resume` ile kaldığı yerden devam eder.
+Three ways to train, all using `training/finetune_qlora.py` (QLoRA, loss on assistant tokens only):
 
-## 0) Kaggle hazırlığı
-1. kaggle.com → hesap → **telefon doğrula** (GPU için şart).
-2. New Notebook → sağ panel: *Accelerator* = **GPU T4 x2** (veya P100), *Internet* = **On**.
-3. `bist_llm.zip` dosyasını *Add Data → Upload* ile yükle (veya notebook'a sürükle). Zip'in içinde `tools/`, `training/`, `harness/`, `data/` olmalı.
+| Where | Notes |
+|---|---|
+| Local NVIDIA GPU (≥ 8 GB) | Tested on an RTX 4070 Laptop GPU (8 GB): Qwen2.5-3B, bf16, `--liger`, 2 epochs ≈ 3 h 50 min |
+| Google Colab (free T4) | Open `notebooks/colab_finetune.ipynb` (File → Open notebook → GitHub tab → repo URL) and run the cells in order. Checkpoints go to Google Drive; after a disconnect run cells 1–3 again and continue with `--resume` |
+| Kaggle (T4 / P100) | Same commands as below; needs a phone-verified account with GPU enabled |
 
-## 1) Kurulum hücresi
+## 0) Environment
+```bash
+pip install -U "transformers>=4.45" "peft>=0.13" "bitsandbytes>=0.44" accelerate pyarrow pandas liger-kernel
+# PyTorch with CUDA, e.g.: pip install torch --index-url https://download.pytorch.org/whl/cu128
+```
+On Kaggle/Colab:
 ```bash
 !git clone -q https://github.com/yarenerisen/bist100-agentic-financial-harness.git /kaggle/working/repo
 %cd /kaggle/working/repo/bist_llm
-!pip install -q -U "transformers>=4.45" "peft>=0.13" "bitsandbytes>=0.44" accelerate pyarrow liger-kernel
 ```
 
-## 2) Önce BASE modeli test et (raporda "base vs fine-tuned" karşılaştırması için zorunlu)
-```python
-!python -m harness.evaluate --backend hf --model Qwen/Qwen2.5-7B-Instruct --limit 40 --tag base
-```
-Sonuç: `results/eval_base.json`
-
-## 3) Duman testi (5 dk) → sonra asıl eğitim
+## 1) Baseline: evaluate the BASE model first (needed for the base vs fine-tuned comparison)
 ```bash
-!python training/finetune_qlora.py --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora --limit 30 --epochs 1
-!python training/finetune_qlora.py --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora --epochs 2 --liger
-```
-- Süre tahmini T4'te: 7B için epoch başına ~1–1.5 saat. Zaman sıkışırsa `--model Qwen/Qwen2.5-3B-Instruct`.
-- `--liger`: 152 bin kelimelik çıktı katmanını belleğe açmadan kaybı hesaplar. 8 GB'lık GPU'larda 6 bin tokenlık örnekler için gerekli (RTX 4070 Laptop'ta test edildi: 3B, bf16, eğitim + eval sığıyor, ~4-5 s/örnek).
-- Bellek hatası (OOM) olursa: `--max-len 4096` (uzun örnekler atlanır, kaç tane atlandığı yazdırılır).
-- `training_report.json` → loss eğrisi ve ayarlar (rapora koy).
-
-## 4) Birleştir + fine-tuned modeli değerlendir
-```bash
-!python training/finetune_qlora.py --merge --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora
-!python -m harness.evaluate --backend hf --model /kaggle/working/bist-lora-merged --tag finetuned
-!python -m harness.evaluate --backend hf --model /kaggle/working/bist-lora-merged --limit 20 --repeats 3 --tag finetuned_repro
+python -m harness.evaluate --backend hf --model Qwen/Qwen2.5-3B-Instruct --limit 40 --tag base_E
 ```
 
-## 5) GGUF'a çevir (laptopta yerel çalıştırmak için)
+## 2) Smoke test, then full training
 ```bash
-!git clone -q https://github.com/ggerganov/llama.cpp && pip install -q -r llama.cpp/requirements.txt
-!python llama.cpp/convert_hf_to_gguf.py /kaggle/working/bist-lora-merged --outfile bist-analyst-f16.gguf --outtype f16
-# quantize (llama.cpp derlemesi gerekir) ya da f16'yı indirip laptopta quantize et:
-!cd llama.cpp && cmake -B build && cmake --build build --target llama-quantize -j 4
-!llama.cpp/build/bin/llama-quantize bist-analyst-f16.gguf bist-analyst-Q4_K_M.gguf Q4_K_M
+python training/finetune_qlora.py --model Qwen/Qwen2.5-3B-Instruct --out runs/smoke --limit 30 --epochs 1 --liger
+python training/finetune_qlora.py --model Qwen/Qwen2.5-3B-Instruct --out runs/bist-lora --epochs 2 --liger --resume
 ```
-`bist-analyst-Q4_K_M.gguf` (~4.7 GB, 3B modelde ~2 GB) dosyasını indir.
+- `--liger`: fused linear + cross-entropy; the 152k-vocabulary logits are never materialised (needed for 6k-token
+  examples on 8 GB GPUs; training and evaluation both fit).
+- Out of memory: `--max-len 4096` (longer examples are skipped and counted).
+- `--resume` continues from the last checkpoint (saved every `--save-steps`, default 20).
+- `training_report.json` holds the settings and the loss history (for the report).
 
-## 6) Laptopta yerel çalıştırma (internetsiz)
-Seçenek A, llama.cpp:
+## 3) Evaluate the fine-tuned model (the LoRA adapter can be loaded directly, no merge needed)
 ```bash
-llama-server -m bist-analyst-Q4_K_M.gguf -c 8192 --port 8080
-python -m harness.run_agent --backend openai --base-url http://127.0.0.1:8080/v1 "THYAO'da Pzt-Sal-Çar düşüş, Per-Cum yükseliş deseni var mı?"
+python -m harness.evaluate --backend hf --model runs/bist-lora --tag finetuned_E
+python -m harness.evaluate --backend hf --model runs/bist-lora --limit 15 --repeats 3 --tag finetuned_repro
 ```
-Seçenek B, Ollama: `Modelfile` içeriği:
+Add `--load-4bit` for 7B/8B models on a 16 GB GPU.
+
+## 4) Harness ablation A–E (same model, different harness levels)
+A = raw LLM (data as text), B = LLM + tools, C = stateful harness, D = + evidence and quality gate, E = + memory and human review.
+```bash
+for m in A B C D E; do python -m harness.evaluate --backend hf --model runs/bist-lora --mode $m --limit 20 --tag finetuned_$m; done
+for m in A B E; do python -m harness.evaluate --backend hf --model Qwen/Qwen2.5-3B-Instruct --mode $m --limit 20 --tag base_$m; done
 ```
-FROM ./bist-analyst-Q4_K_M.gguf
+
+## 5) Export to GGUF for llama.cpp / Ollama (fully offline inference)
+```bash
+python training/finetune_qlora.py --merge --model Qwen/Qwen2.5-3B-Instruct --out runs/bist-lora --merged-out runs/bist-merged
+git clone https://github.com/ggerganov/llama.cpp && pip install -r llama.cpp/requirements.txt
+python llama.cpp/convert_hf_to_gguf.py runs/bist-merged --outfile bist-analyst-q8_0.gguf --outtype q8_0
+```
+
+## 6) Run locally without internet
+llama.cpp:
+```bash
+llama-server -m bist-analyst-q8_0.gguf -c 8192 --port 8080
+python -m harness.run_agent --backend openai --base-url http://127.0.0.1:8080/v1 "Does THYAO show a Mon-Wed down, Thu-Fri up pattern?"
+```
+Ollama (`Modelfile`):
+```
+FROM ./bist-analyst-q8_0.gguf
 PARAMETER temperature 0
 PARAMETER num_ctx 8192
 ```
@@ -63,17 +72,11 @@ PARAMETER num_ctx 8192
 ollama create bist-analyst -f Modelfile
 python -m harness.run_agent --backend openai --base-url http://127.0.0.1:11434/v1 --model bist-analyst "..."
 ```
-Not: Ollama GGUF'un içindeki Qwen sohbet şablonunu kullanır; harness araç sonuçlarını `<tool_response>` ile sardığı için eğitimdeki formatla aynıdır.
+Or directly with Transformers: `python -m harness.run_agent --backend hf --model runs/bist-lora "..."`.
 
-## 6b) Harness deneyleri A–E (proje dokümanı Bölüm 30, rapor tablosu)
-Aynı model, farklı harness seviyeleri: A = ham LLM (veri metin olarak), B = araçlı, C = durum makinesi, D = kanıt ve kalite kapısı, E = hafıza ve insan onayı.
+## 7) Demo
 ```bash
-for m in A B C D E; do python -m harness.evaluate --backend hf --model /kaggle/working/bist-lora-merged --mode $m --limit 40 --tag ft_$m; done
-for m in A B D; do python -m harness.evaluate --backend hf --model Qwen/Qwen2.5-7B-Instruct --mode $m --limit 40 --tag base_$m; done
-```
-
-## 7) Demo (canlı test)
-```bash
-python -m harness.run_agent --backend openai --review "soru..."     # human review adımıyla
-python -m harness.run_agent --replay logs/<dosya>.json               # tekrar üretilebilirlik kontrolü
+python -m harness.run_agent --backend hf --model runs/bist-lora --review "question..."   # with human review
+python -m harness.run_agent --replay logs/<file>.json                                    # reproducibility check
+python -m harness.run_agent --bundle logs/<file>.json                                    # evidence bundle
 ```

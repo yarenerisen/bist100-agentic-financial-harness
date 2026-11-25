@@ -1,4 +1,4 @@
-"""Speech-to-text pipeline for instructor-approved public finance videos (runs locally, no cloud APIs).
+"""Speech-to-text pipeline for pre-approved public finance videos (runs locally, no cloud APIs).
 
 1. Download the approved video's audio yourself (respect the platform's terms) and note its metadata.
 2. python data/speech_pipeline.py --audio talk.m4a --source-id damodaran_2026_01 --url https://... \

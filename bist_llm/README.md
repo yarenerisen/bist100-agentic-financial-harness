@@ -15,7 +15,7 @@ training/  prompts.py (system prompt), generate_dataset.py → train/val/test.js
            labeling_rules.md, finetune_qlora.py, RUN_ON_KAGGLE.md
 harness/   run_agent.py (state machine, tool execution, quality gate, answer validation, human review, decision log, replay,
            ablation modes A–E), evidence.py (observed context vs committed evidence), memory.py (episodic memory, SQLite)
-           validate.py (numeric hallucination / format / action-space / advice checks), evaluate.py (Section 30 metrics)
+           validate.py (numeric hallucination / format / action-space / advice checks), evaluate.py (evaluation metrics)
 research/  run_scenarios.py → docs/results/*.md (scenario reports), plot_signals.py → docs/figures/*.png
 ```
 
@@ -26,7 +26,7 @@ python -m harness.evaluate --backend replay            # pipeline sanity check (
 python -m harness.run_agent --backend openai "..."     # ask the local model (llama.cpp / Ollama server)
 python -m harness.run_agent --replay logs/<id>.json    # reproducibility check of a logged analysis
 python -m harness.run_agent --bundle logs/<id>.json    # evidence bundle of a logged analysis
-python -m harness.evaluate --backend openai --mode C   # harness ablation A..E (Section 30)
+python -m harness.evaluate --backend openai --mode C   # harness ablation A..E
 python -m research.run_scenarios                       # regenerate docs/results/ (~30 s)
 python -m research.plot_signals ASELS lower_bollinger_touch   # chart → docs/figures/
 ```
@@ -44,12 +44,12 @@ Python: `pip install pandas pyarrow numpy yfinance` (tools) + `transformers peft
 ## Known limitations
 - Sector map is simplified; several sectors have only 2 stocks (warned).
 - Yahoo volume data is unreliable for some tickers (e.g. SASA has many zero-volume days; warned).
-- Fundamentals: parsed from the instructor's KAP report PDFs (`data/parse_financials.py`, 13 non-bank companies,
+- Fundamentals: parsed from KAP financial report PDFs (`data/parse_financials.py`, 13 non-bank companies,
   reports 2024Q4–2026Q2 → 2024Q1–Q3 not available). Quarterly values = YTD differences (approximate under TMS 29
   inflation restatement); 2024Q4 row = full-year 2024; disclosure date = board-approval date in the report;
   net debt includes lease liabilities; CCOLA 2024Q4 income statement is unreadable (garbled font) and is omitted.
   AKBNK (bank) is excluded: EBITDA-based ratios are not meaningful for banks.
 - TÜİK CPI not loaded; TCMB/Fed rate files should be re-verified against official tables.
 - News layer = official timestamped events only (KAP disclosures, TCMB/FOMC); no licensed news feed. Speech pipeline exists
-  (`data/speech_pipeline.py`, local Whisper) but no instructor-approved videos are loaded yet; strategy variant E is unavailable.
+  (`data/speech_pipeline.py`, local Whisper) but no pre-approved videos are loaded yet; strategy variant E is unavailable.
 - Event studies are in-sample; few events for combined conditions → low statistical power (always reported).

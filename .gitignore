@@ -8,6 +8,7 @@ venv/
 
 # Data (regenerate with bist_llm/data/download_prices.py)
 *.parquet
+!bist_llm/data/prices.parquet
 
 # Harness decision logs
 bist_llm/harness/logs/

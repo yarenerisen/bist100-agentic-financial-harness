@@ -5,7 +5,7 @@ Event sources (all timestamped, verifiable):
   - TCMB policy-rate decisions (data/policy_rate.csv), FOMC decisions (data/fed_rate.csv)
   - optional curated, legally accessible headlines: data/news_events.csv
     (timestamp,ticker,topic,event_type,headline,source,url)
-Speech features: data/speech/features.jsonl produced by data/speech_pipeline.py from instructor-approved videos."""
+Speech features: data/speech/features.jsonl produced by data/speech_pipeline.py from pre-approved videos."""
 import json
 from pathlib import Path
 import pandas as pd
@@ -76,7 +76,7 @@ def get_news_events(ticker=None, topic=None, start="2024-01-01", end="2026-09-10
 def get_speech_features(source_id=None, topic=None, ticker=None) -> dict:
     out = {"tool": "get_speech_features", "source_id": source_id, "topic": topic, "ticker": ticker, "segments": [], "warnings": []}
     if not SPEECH.exists():
-        out["warnings"].append("no instructor-approved video transcripts are loaded; speech context unavailable")
+        out["warnings"].append("no pre-approved video transcripts are loaded; speech context unavailable")
         return out
     rows = [json.loads(l) for l in SPEECH.read_text().splitlines() if l.strip()]
     for r in rows:

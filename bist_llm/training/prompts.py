@@ -9,7 +9,7 @@ get_index_history(index=XU100, start, end)
 find_support_resistance(ticker, start, end)
 preview_strategy_variants(tickers, start, end, oos_start)  # variants A technical .. D +macro, E news; in-sample vs out-of-sample
 get_news_events(ticker, topic, start, end)  # official timestamped events: KAP disclosures, TCMB/FOMC decisions; topic: earnings|rates
-get_speech_features(topic, ticker)  # instructor-approved finance video transcripts
+get_speech_features(topic, ticker)  # pre-approved finance video transcripts
 rank_sector_relative_strength(sector, horizon=20, as_of)  # sector = name or list of tickers
 run_backtest(strategy, sector|tickers, start, end, lag_window=20, lag_threshold_pp=5.0, require_strong_sector=false, hold_days)  # strategy: sector_catch_up | weekday_mon_wed_down | an event name
 test_weekday_pattern(ticker, pattern, start, end)  # pattern: 5 letters Mon..Fri, U=up D=down X=any, e.g. DDDUU

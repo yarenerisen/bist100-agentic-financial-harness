@@ -1,4 +1,4 @@
-"""Evaluation with the course metrics (Section 30): runs test questions through the harness and compares to references.
+"""Evaluation with the evaluation metrics: runs test questions through the harness and compares to references.
 Usage:
   python -m harness.evaluate --backend replay                       # sanity check of the pipeline (should be ~perfect)
   python -m harness.evaluate --backend openai --model bist-analyst  # fine-tuned model on local llama.cpp/Ollama
@@ -10,6 +10,24 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from harness.run_agent import run, OpenAIBackend, HFBackend, ReplayBackend   # noqa: E402
 from harness.validate import numbers_not_in_evidence, check_answer          # noqa: E402
+
+import pandas as pd
+REAL_FUND = set(pd.read_csv(ROOT / "data" / "fundamentals.csv").dropna(subset=["revenue"]).ticker)
+FUND_TOOLS = {"get_fundamental_metrics", "calculate_fundamental_change", "preview_strategy_variants"}
+
+
+def fundamentals_source(refs):
+    """real = all fundamentals come from parsed KAP reports; synthetic = training-only synthetic file; n/a = no fundamentals used."""
+    tk = set()
+    for r in refs:
+        if r["tool"] in FUND_TOOLS:
+            a = r["arguments"]
+            v = a.get("ticker") or a.get("tickers") or []
+            tk |= set([v] if isinstance(v, str) else v)
+    if not tk:
+        return "no_fundamentals"
+    return "real_KAP" if tk <= REAL_FUND else ("synthetic" if not (tk & REAL_FUND) else "mixed")
+
 
 KEY_ARGS = ("ticker", "event", "pattern", "pattern_type", "strategy", "start", "end", "as_of", "horizon")
 
@@ -33,7 +51,8 @@ def eval_row(row, backend_factory, repeats=1, mode="E"):
     raw_answer = t.get("first_answer", t["answer"])          # judge the model's own first answer, before harness fallback
     bad_nums = numbers_not_in_evidence(raw_answer, evid)
     raw_chk = check_answer(raw_answer, evid)
-    return {"scenario": row["meta"]["scenario"], "ref_state": row["meta"]["state"], "state": t["state"],
+    return {"scenario": row["meta"]["scenario"], "fundamentals_source": fundamentals_source(refs),
+            "ref_state": row["meta"]["state"], "state": t["state"],
             "raw_state": raw_chk["state"],
             "tool_sequence_correct": tool_ok, "tool_args_correct": args_ok,
             "invalid_tool_calls": t["invalid_tool_calls"], "n_tool_calls": len(calls), "lookahead_call": lookahead,
@@ -69,7 +88,7 @@ if __name__ == "__main__":
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--repeats", type=int, default=1, help="run each question N times to measure reproducibility")
     ap.add_argument("--tag", default=None)
-    ap.add_argument("--mode", default="E", choices=list("ABCDE"), help="harness ablation level (Section 30)")
+    ap.add_argument("--mode", default="E", choices=list("ABCDE"), help="harness ablation level")
     ap.add_argument("--load-4bit", action="store_true", help="hf backend: load the model in 4-bit (7B on a T4)")
     ap.add_argument("--out-dir", default=None, help="where to write eval_<tag>.json (e.g. a Google Drive folder)")
     ap.add_argument("--allow-remote", action="store_true")
@@ -95,9 +114,14 @@ if __name__ == "__main__":
     by = {}
     for sc in sorted({r["scenario"] for r in res}):
         by[sc] = summarize([r for r in res if r["scenario"] == sc])
-    out = {"tag": a.tag or f"{a.backend}_{a.mode}", "mode": a.mode, "model": a.model, "time": time.strftime("%Y-%m-%d %H:%M"), "overall": s, "by_scenario": by, "rows": res}
+    by_src = {k: summarize([r for r in res if r["fundamentals_source"] == k])
+              for k in sorted({r["fundamentals_source"] for r in res})}
+    out = {"tag": a.tag or f"{a.backend}_{a.mode}", "mode": a.mode, "by_fundamentals_source": by_src, "model": a.model, "time": time.strftime("%Y-%m-%d %H:%M"), "overall": s, "by_scenario": by, "rows": res}
     rdir = Path(a.out_dir) if a.out_dir else ROOT / "results"
     rdir.mkdir(parents=True, exist_ok=True)
     p = rdir / f"eval_{out['tag']}.json"
     p.write_text(json.dumps(out, ensure_ascii=False, indent=1))
-    print("\n" + json.dumps(s, indent=1)); print("saved", p)
+    print("\n" + json.dumps(s, indent=1))
+    print("by fundamentals source:", json.dumps({k: {"n": v["n"], "halluc_%": v["numerical_hallucination_rate_pct"],
+                                                    "unsupported_%": v["unsupported_conclusion_rate_pct"]} for k, v in by_src.items()}))
+    print("saved", p)

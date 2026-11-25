@@ -1,4 +1,4 @@
-"""Episodic memory (Section 24): past analysis cases  state -> evidence -> action -> gate -> human decision, in SQLite.
+"""Episodic memory: past analysis cases  state -> evidence -> action -> gate -> human decision, in SQLite.
 Temporal memory = data/ files (prices, fundamentals, macro); procedural memory = training/prompts.py + labeling rules + registry."""
 import json, sqlite3, time
 from pathlib import Path

@@ -98,7 +98,7 @@ DESCRIPTIONS = {
     "find_support_resistance": "Support/resistance levels from clustered pivots: zone, touches, recency, reversal rate after zone touches.",
     "preview_strategy_variants": "Strategy variants A (technical) .. D (technical+sector+fundamental+macro), E (news, unavailable) with identical costs; in-sample vs out-of-sample.",
     "get_news_events": "Timestamped official events: KAP financial-report disclosures, TCMB/FOMC rate decisions (contextual only).",
-    "get_speech_features": "Transcript-derived topics/claims/stance from instructor-approved finance videos (if loaded).",
+    "get_speech_features": "Transcript-derived topics/claims/stance from pre-approved finance videos (if loaded).",
     "get_stock_history": "Price summary for one stock: first/last close, total return, high/low, volatility, max drawdown.",
     "rank_sector_relative_strength": "Ranks stocks in a sector by return over the last `horizon` trading days vs the sector median and XU100; flags whether the sector is strong; adds Supertrend/KAMA state.",
     "run_backtest": "Historical verification. sector_catch_up = event study of laggards (hit rate, false positives over 5/10/20d) + portfolio backtest; other strategies = trade backtest with Sharpe, max drawdown, win rate vs buy-and-hold and XU100.",
