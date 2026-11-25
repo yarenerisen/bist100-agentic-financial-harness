@@ -1,0 +1,92 @@
+ticker,quarter_end,disclosure_date,revenue,ebitda,net_profit,net_debt,ebitda_ltm,source
+ARCLK,2024-12-31,2025-01-31,0.0,23672423.0,1689082,87227255,23672423.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+ARCLK,2025-03-31,2025-04-25,109117642.0,7225121.0,-1951579,114696529,28900484.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+ARCLK,2025-06-30,2025-07-25,127917937.0,8443202.0,-3071488,145059032,31336646.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+ARCLK,2025-09-30,2025-10-24,142233705.0,9207202.0,-2715392,150232741,33167367.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+ARCLK,2025-12-31,2026-01-30,144664037.0,8869940.0,-2060854,138069253,33745465.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+ARCLK,2026-03-31,2026-04-22,130271680.0,5860323.0,-2214344,169781109,32380667.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+ARCLK,2026-06-30,2026-07-29,150460856.0,11021470.0,2658108,193654363,34958935.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+ASELS,2024-12-31,2025-02-25,120205594.0,30615169.0,15222719,15925058,30615169.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+ASELS,2025-03-31,2025-04-29,22790773.0,8577641.0,2133491,20113293,34310564.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+ASELS,2025-06-30,2025-08-05,30919424.0,11126320.0,4277118,21041285,39407922.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+ASELS,2025-09-30,2025-11-04,37162673.0,10318119.0,5177150,23768698,40029440.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+ASELS,2025-12-31,2026-02-24,89572068.0,24672372.0,18329968,13970074,54694452.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+ASELS,2026-03-31,2026-04-28,34305800.0,10444492.0,5549453,22084087,56561303.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+ASELS,2026-06-30,2026-08-04,54188452.0,16425010.0,8900381,33824364,61859993.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+BIMAS,2024-12-31,2025-03-11,519566633.0,22514303.0,18612946,71136870,22514303.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+BIMAS,2025-03-31,2025-05-08,147722657.0,4883661.0,2710405,76226133,19534644.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+BIMAS,2025-06-30,2025-08-14,162112234.0,9831625.0,2842706,90001463,29430572.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+BIMAS,2025-09-30,2025-11-10,202932208.0,13982533.0,5813863,93941496,38263759.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+BIMAS,2025-12-31,2026-03-10,208295407.0,13885086.0,7368282,101121406,42582905.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+BIMAS,2026-03-31,2026-05-11,212862328.0,9828205.0,6551167,110343577,47527449.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+BIMAS,2026-06-30,2026-08-17,236832907.0,13291101.0,8543648,120119588,50986925.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+CCOLA,2024-12-31,2025-03-04,,,14813376,25890912,,KAP report PDF; disclosure=auditor_report_date; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+CCOLA,2025-03-31,2025-05-06,36157897.0,4540222.0,1297357,35501900,18160888.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+CCOLA,2025-06-30,2025-08-11,50314190.0,9246367.0,5183551,36297015,27573178.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+CCOLA,2025-09-30,2025-11-04,58689892.0,12612627.0,7713467,26934563,35198955.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+CCOLA,2025-12-31,2026-03-03,42022535.0,6394567.0,68933,27232911,32793783.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+CCOLA,2026-03-31,2026-05-04,52368615.0,9229349.0,5300546,27948727,37482910.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+CCOLA,2026-06-30,2026-08-10,70891097.0,15279154.0,8779341,31590880,43515697.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+EREGL,2024-12-31,2025-02-12,0.0,911934.0,411265,1865356,911934.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+EREGL,2025-03-31,2025-04-29,1480213.0,117923.0,12382,1523546,471692.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+EREGL,2025-06-30,2025-08-06,1056874.0,115027.0,36137,1287319,465900.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+EREGL,2025-09-30,2025-10-20,1303530.0,127338.0,16816,1176424,480384.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+EREGL,2025-12-31,2026-02-17,1458128.0,178630.0,-47724,993785,538918.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+EREGL,2026-03-31,2026-04-28,1369214.0,140014.0,9309,707577,561009.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+EREGL,2026-06-30,2026-08-06,1431394.0,146332.0,197917,847200,592314.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+FROTO,2024-12-31,2025-02-17,594995138.0,39696935.0,38863566,101426557,39696935.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+FROTO,2025-03-31,2025-04-29,160901178.0,11276205.0,6487096,89276879,45104820.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+FROTO,2025-06-30,2025-07-30,204458567.0,16620213.0,6500465,90629351,55792836.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+FROTO,2025-09-30,2025-11-05,217000886.0,14535667.0,9376041,97772465,56576113.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+FROTO,2025-12-31,2026-02-09,248467302.0,17376511.0,11622533,99193516,59808596.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+FROTO,2026-03-31,2026-05-05,192442597.0,10064046.0,5498818,106438403,58596437.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+FROTO,2026-06-30,2026-08-04,234626583.0,11984803.0,4837895,111981980,53961027.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+MGROS,2024-12-31,2025-03-05,293779664.0,501771.0,6538759,14280911,501771.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+MGROS,2025-03-31,2025-05-07,78436533.0,120199.0,1031606,30207992,480796.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+MGROS,2025-06-30,2025-08-12,96407535.0,214274.0,435750,32283570,668946.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+MGROS,2025-09-30,2025-11-06,120003510.0,4842811.0,4143228,29365252,6903045.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+MGROS,2025-12-31,2026-03-04,117908851.0,2640191.0,1182949,35046501,7817475.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+MGROS,2026-03-31,2026-05-05,109236956.0,384094.0,1610250,43376422,8081370.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+MGROS,2026-06-30,2026-08-11,132061083.0,34291.0,-531994,44681961,7901387.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+PGSUS,2024-12-31,2025-03-04,111822522278.0,32829409384.0,13285437677,253997696,32829409384.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+PGSUS,2025-03-31,2025-05-08,23587573014.0,-205846668.0,-2634620682,15811348444,-823386672.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+PGSUS,2025-06-30,2025-08-12,38425497039.0,7008672359.0,5132457835,8033547384,13605651382.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+PGSUS,2025-09-30,2025-11-07,52392024842.0,17320287251.0,10828830379,9272103078,32164150589.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+PGSUS,2025-12-31,2026-03-04,39722459549.0,6600082105.0,423551320,17262388919,30723195047.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+PGSUS,2026-03-31,2026-05-11,32760718.0,952178.0,-7758354,18085352,30929993893.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+PGSUS,2026-06-30,2026-08-12,45708013.0,4212737.0,-4793481,23653877,23925534271.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+TCELL,2024-12-31,2025-02-27,158854007.0,82849674.0,11086899,36450819,82849674.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+TCELL,2025-03-31,2025-05-09,45408937.0,29323466.0,3082110,44547814,117293864.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+TCELL,2025-06-30,2025-08-13,53022862.0,35869793.0,4573047,59055493,130386518.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+TCELL,2025-09-30,2025-11-06,64002968.0,35968920.0,5957911,61996264,134882905.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+TCELL,2025-12-31,2026-03-05,66579506.0,35623669.0,4178342,69785032,136785848.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+TCELL,2026-03-31,2026-05-11,64950588.0,30651024.0,4634415,114409042,138113406.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+TCELL,2026-06-30,2026-08-13,72516801.0,35464465.0,5560254,126761931,137708078.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+THYAO,2024-12-31,2025-02-27,745430.0,152699.0,113357,403747,152699.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+THYAO,2025-03-31,2025-04-28,176712.0,17882.0,-4384,448849,71528.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+THYAO,2025-06-30,2025-08-05,231324.0,49600.0,29319,485696,134964.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+THYAO,2025-09-30,2025-11-06,282789.0,67887.0,56016,544182,180492.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+THYAO,2025-12-31,2026-03-04,264647.0,49442.0,37166,678218,184811.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+THYAO,2026-03-31,2026-04-29,257961.0,25907.0,9856,742814,192836.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+THYAO,2026-06-30,2026-08-04,327108.0,28222.0,8910,833888,171458.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+TOASO,2024-12-31,2025-02-12,120266571.0,10321968.0,5221439,8185139,10321968.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+TOASO,2025-03-31,2025-04-28,24204042.0,784059.0,-140454,3131373,3136236.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+TOASO,2025-06-30,2025-07-28,70894212.0,2087247.0,1742627,19949783,5742612.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+TOASO,2025-09-30,2025-11-03,94360517.0,2400043.0,1328579,19627799,7028465.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+TOASO,2025-12-31,2026-02-09,129954737.0,5814750.0,5423181,33701681,11086099.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+TOASO,2026-03-31,2026-05-05,95109919.0,3039569.0,2988567,48381400,13341609.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+TOASO,2026-06-30,2026-07-29,106687189.0,2827421.0,3301965,59356057,14081783.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+TTKOM,2024-12-31,2025-03-10,161650927.0,61304634.0,8456145,60428939,61304634.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+TTKOM,2025-03-31,2025-05-07,45596373.0,17084279.0,5134196,53604849,68337116.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+TTKOM,2025-06-30,2025-08-13,53165182.0,21379624.0,5181624,53088198,76927806.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+TTKOM,2025-09-30,2025-11-04,66933577.0,28949096.0,11016794,54204320,89883999.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+TTKOM,2025-12-31,2026-03-04,76533491.0,28512541.0,1647918,55569357,95925540.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+TTKOM,2026-03-31,2026-05-06,64858147.0,27118701.0,10457008,108751972,105959962.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+TTKOM,2026-06-30,2026-08-05,77354446.0,30184385.0,6695137,116420344,114764723.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
+TUPRS,2024-12-31,2025-02-17,810385588.0,45326076.0,19033640,-54545801,45326076.0,KAP report PDF; disclosure=board_approval; FULL-YEAR values (12M) - previous YTD report not in archive; LTM=full year
+TUPRS,2025-03-31,2025-04-29,158623387.0,6894083.0,120127,-25596153,27576332.0,KAP report PDF; disclosure=board_approval; LTM=annualised YTD (approx.)
+TUPRS,2025-06-30,2025-07-29,192692116.0,13328045.0,8949323,-48981404,40444256.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+TUPRS,2025-09-30,2025-10-31,247028544.0,20130237.0,12937171,-74430654,53803153.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=annualised YTD (approx.)
+TUPRS,2025-12-31,2026-02-06,232012084.0,15920394.0,7866051,-56987726,56272759.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=full year
+TUPRS,2026-03-31,2026-05-06,258253850.0,15531841.0,3815100,-74706151,64910517.0,KAP report PDF; disclosure=board_approval; LTM=sum of last 4 quarters
+TUPRS,2026-06-30,2026-08-04,404534160.0,52365715.0,46457373,-127640261,103948187.0,KAP report PDF; disclosure=board_approval; quarter = YTD difference (TMS29 approx.); LTM=sum of last 4 quarters
