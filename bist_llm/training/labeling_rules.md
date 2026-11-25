@@ -5,7 +5,7 @@ from a tool output (verified by `harness/validate.py`: 0 violations across 1,410
 
 | Scenario | Rule (first match wins) | State |
 |---|---|---|
-| S1 sector catch-up | weakest stock lag smaller than threshold (5 pp) | WATCH |
+| S1 sector catch-up (inputs: `decision_inputs` of run_backtest for the weakest stock, `sector_strong` of the ranking) | weakest stock lag smaller than threshold (5 pp) | WATCH |
 | | sector not strong (median ≤ 0 or ≤ XU100) | WATCH |
 | | fewer than 10 non-overlapping 20-day events | INVESTIGATE |
 | | 20d hit rate ≥ 55%, mean rel. return after cost > 0, and Supertrend bullish or close > KAMA | POTENTIAL_CATCH_UP_CANDIDATE |
@@ -18,8 +18,8 @@ from a tool output (verified by `harness/validate.py`: 0 violations across 1,410
 | S2 multi-day | < 10 complete events | INVESTIGATE |
 | | up rate > unconditional and mean after cost > 0 | WATCH |
 | | otherwise | REJECT_SIGNAL |
-| S3 reversal | < 10 events with complete forward window | INVESTIGATE |
-| | success ≥ 60% and an event in the last 10 trading days | TECHNICAL_REVERSAL_CANDIDATE |
+| S3 reversal (inputs: `summary` of detect_reversal_events) | < 10 events with complete forward window | INVESTIGATE |
+| | success ≥ 60% and `event_in_last_10_trading_days` = true (computed by the tool from the trading calendar) | TECHNICAL_REVERSAL_CANDIDATE |
 | | success ≥ 60%, no recent event | WATCH |
 | | success < 50% | REJECT_SIGNAL |
 | | otherwise | WATCH |

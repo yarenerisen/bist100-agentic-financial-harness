@@ -169,27 +169,29 @@ def s1(lang, split, forced=None):
     bt = c.call("run_backtest", {"strategy": "sector_catch_up", "sector": sector_arg, "start": s, "end": d, "lag_window": h})
     if "error" in bt:
         return None
-    res = bt["results"][w]["by_horizon"]
+    res = bt["results"][w]["by_horizon"]; di = bt["results"][w]["decision_inputs"]
     lag = wr["lag_vs_median_pp"]; thr = bt["lag_threshold_pp"]
     r20 = res["20d"]; pb = bt["portfolio_backtest"]; perf = {p["series"]: p for p in pb["performance"]}
     tech_ok = wr["supertrend"] == "bullish" or wr["close_above_kama"]
-    # ---- labeling rules (see labeling_rules.md)
-    if lag > -thr:
-        state = "WATCH"; why = L(lang, f"the lag of {F(lag)} pp is smaller than the {F(thr)} pp threshold, so there is no material laggard",
-                                f"{F(lag)} puanlık gerilik {F(thr)} puanlık eşikten küçük, belirgin bir geride kalan yok")
+    # ---- labeling rules (see labeling_rules.md); every input is a field of the tool outputs
+    if not di["lag_at_or_beyond_threshold"]:
+        state = "WATCH"; why = L(lang, f"lag_at_or_beyond_threshold = false: the lag of {F(lag)} pp is smaller than the {F(thr)} pp threshold, so there is no material laggard",
+                                f"lag_at_or_beyond_threshold = false: {F(lag)} puanlık gerilik {F(thr)} puanlık eşikten küçük, belirgin bir geride kalan yok")
     elif not rk["sector_strong"]:
-        state = "WATCH"; why = L(lang, "the sector itself is not strong (sector_strong = false), so the catch-up premise does not hold",
-                                 "sektörün kendisi güçlü değil (sector_strong = false), catch-up varsayımı sağlanmıyor")
-    elif r20["events"] < 10:
-        state = "INVESTIGATE"; why = L(lang, f"only {F(r20['events'])} comparable 20-day events exist, too few to verify", f"yalnızca {F(r20['events'])} karşılaştırılabilir 20 günlük olay var, doğrulamak için az")
-    elif (r20["hit_rate_pct"] or 0) >= 55 and (r20["mean_after_cost_pp"] or 0) > 0 and tech_ok:
-        state = "POTENTIAL_CATCH_UP_CANDIDATE"; why = L(lang, "the sector is strong, the lag exceeds the threshold, past lags were mostly followed by outperformance after costs and the technical trend is stabilising",
-                                                        "sektör güçlü, gerilik eşiğin üzerinde, geçmiş geriliklerin çoğu maliyet sonrası akranları geçmiş ve teknik trend toparlanıyor")
-    elif (r20["hit_rate_pct"] or 0) < 45:
-        state = "REJECT_SIGNAL"; why = L(lang, f"historically the 20-day hit rate was only {F(r20['hit_rate_pct'])}%, laggards mostly kept underperforming",
-                                         f"tarihsel 20 günlük isabet oranı yalnızca %{F(r20['hit_rate_pct'])}, geride kalanlar çoğunlukla zayıf kalmaya devam etmiş")
+        state = "WATCH"; why = L(lang, "sector_strong = false: the sector itself is not strong, so the catch-up premise does not hold",
+                                 "sector_strong = false: sektörün kendisi güçlü değil, catch-up varsayımı sağlanmıyor")
+    elif not di["at_least_10_events"]:
+        state = "INVESTIGATE"; why = L(lang, f"at_least_10_events = false: only {F(di['events'])} comparable 20-day events exist, too few to verify",
+                                       f"at_least_10_events = false: yalnızca {F(di['events'])} karşılaştırılabilir 20 günlük olay var, doğrulamak için az")
+    elif di["hit_rate_at_least_55"] and di["mean_after_cost_positive"] and tech_ok:
+        state = "POTENTIAL_CATCH_UP_CANDIDATE"; why = L(lang, "sector_strong = true, lag_at_or_beyond_threshold = true, hit_rate_at_least_55 = true, mean_after_cost_positive = true and the technical trend is stabilising (Supertrend bullish or close above KAMA)",
+                                                        "sector_strong = true, lag_at_or_beyond_threshold = true, hit_rate_at_least_55 = true, mean_after_cost_positive = true ve teknik trend toparlanıyor (Supertrend yükselişte veya kapanış KAMA üzerinde)")
+    elif di["hit_rate_below_45"]:
+        state = "REJECT_SIGNAL"; why = L(lang, f"hit_rate_below_45 = true: historically the 20-day hit rate was only {F(di['hit_rate_pct'])}%, laggards mostly kept underperforming",
+                                         f"hit_rate_below_45 = true: tarihsel 20 günlük isabet oranı yalnızca %{F(di['hit_rate_pct'])}, geride kalanlar çoğunlukla zayıf kalmaya devam etmiş")
     else:
-        state = "WATCH"; why = L(lang, "historical evidence is mixed or the technical trend has not stabilised", "tarihsel kanıt karışık veya teknik trend henüz toparlanmadı")
+        state = "WATCH"; why = L(lang, "historical evidence is mixed (hit_rate_at_least_55 = false and hit_rate_below_45 = false, or costs / technical trend not supportive)",
+                                 "tarihsel kanıt karışık (hit_rate_at_least_55 = false ve hit_rate_below_45 = false, ya da maliyet / teknik trend destekleyici değil)")
     ev = [L(lang, f"Over {F(rk['horizon_trading_days'])} trading days ({rk['window_start']} to {rk['window_end']}) the peer median return was {F(rk['sector_median_return_pct'])}% and XU100 returned {F(rk['xu100_return_pct'])}%; sector_strong = {str(rk['sector_strong']).lower()}.",
               f"{F(rk['horizon_trading_days'])} işlem gününde ({rk['window_start']} – {rk['window_end']}) akran medyan getirisi %{F(rk['sector_median_return_pct'])}, XU100 getirisi %{F(rk['xu100_return_pct'])}; sector_strong = {str(rk['sector_strong']).lower()}."),
           L(lang, f"{w} was the weakest: return {F(wr['return_pct'])}%, {F(lag)} pp vs the peer median and {F(wr['vs_xu100_pp'])} pp vs XU100. Strongest: {rk['ranking'][-1]['ticker']} at {F(rk['ranking'][-1]['lag_vs_median_pp'])} pp.",
@@ -375,14 +377,15 @@ def s3(lang, split, tickers):
         return None
     g = r["groups"]; al = g["all_events"]
     n = al["events_with_complete_window"]; sr = al.get("success_rate_pct")
-    recent = r["last_event_dates"] and tdays_between(r["last_event_dates"][-1], r["period"][1]) <= 10
+    sm = r["summary"]; recent = sm["event_in_last_10_trading_days"]
     if n < 10:
         state, why = "INVESTIGATE", L(lang, f"only {F(n)} events have a complete forward window, too few for a conclusion", f"tam ileri penceresi olan yalnızca {F(n)} olay var, sonuç için az")
     elif sr >= 60 and recent:
-        state, why = "TECHNICAL_REVERSAL_CANDIDATE", L(lang, f"the event has historically succeeded in {F(sr)}% of cases and a new event occurred recently ({r['last_event_dates'][-1]})",
-                                                       f"olay tarihsel olarak %{F(sr)} oranında başarılı oldu ve yakın zamanda yeni bir olay gerçekleşti ({r['last_event_dates'][-1]})")
+        state, why = "TECHNICAL_REVERSAL_CANDIDATE", L(lang, f"the event has historically succeeded in {F(sr)}% of cases and the last event ({sm['last_event_date']}) was {F(sm['trading_days_since_last_event'])} trading days before the end of the period (event_in_last_10_trading_days = true)",
+                                                       f"olay tarihsel olarak %{F(sr)} oranında başarılı oldu ve son olay ({sm['last_event_date']}) dönem sonundan {F(sm['trading_days_since_last_event'])} işlem günü önce gerçekleşti (event_in_last_10_trading_days = true)")
     elif sr >= 60:
-        state, why = "WATCH", L(lang, f"the event historically succeeded in {F(sr)}% of cases but there is no recent event", f"olay tarihsel olarak %{F(sr)} oranında başarılı, ancak yakın zamanda olay yok")
+        state, why = "WATCH", L(lang, f"the event historically succeeded in {F(sr)}% of cases, but the last event ({sm['last_event_date']}) was {F(sm['trading_days_since_last_event'])} trading days before the end of the period (event_in_last_10_trading_days = false)",
+                                f"olay tarihsel olarak %{F(sr)} oranında başarılı, ancak son olay ({sm['last_event_date']}) dönem sonundan {F(sm['trading_days_since_last_event'])} işlem günü önce (event_in_last_10_trading_days = false)")
     elif sr < 50:
         state, why = "REJECT_SIGNAL", L(lang, f"the success rate of {F(sr)}% is not better than a coin flip", f"%{F(sr)} başarı oranı yazı-turadan iyi değil")
     else:

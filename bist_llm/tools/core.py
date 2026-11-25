@@ -205,7 +205,19 @@ def run_backtest_catch_up(sector, start="2024-01-01", end="2026-09-10", lag_wind
                 "mean_after_cost_pp": round(float(r.mean() - cost_pct), 2) if len(r) else None,
                 "false_positives": int((r <= 0).sum()),
             }
-        out[t] = {"current_lag_vs_median_pp": round(float(lag[t].iloc[-1]), 2), "by_horizon": res}
+        cur = round(float(lag[t].iloc[-1]), 2)
+        hk = "20d" if "20d" in res else f"{horizons[-1]}d"
+        rh = res[hk]
+        out[t] = {"current_lag_vs_median_pp": cur, "by_horizon": res,
+                  # decision inputs computed here so the model reads them instead of comparing thresholds itself
+                  "decision_inputs": {"horizon": hk, "lag_threshold_pp": lag_threshold_pp,
+                                      "lag_at_or_beyond_threshold": bool(cur <= -lag_threshold_pp),
+                                      "events": rh["events"], "at_least_10_events": rh["events"] >= 10,
+                                      "hit_rate_pct": rh["hit_rate_pct"],
+                                      "hit_rate_at_least_55": bool((rh["hit_rate_pct"] or 0) >= 55),
+                                      "hit_rate_below_45": bool(rh["hit_rate_pct"] is not None and rh["hit_rate_pct"] < 45),
+                                      "mean_after_cost_pp": rh["mean_after_cost_pp"],
+                                      "mean_after_cost_positive": bool((rh["mean_after_cost_pp"] or 0) > 0)}}
     pooled = {f"{h}d": {"events": len(v), "hit_rate_pct": round(float(np.mean(np.array(v) > 0) * 100), 1) if v else None,
                         "mean_rel_return_pp": round(float(np.mean(v)), 2) if v else None,
                         "false_positive_rate_pct": round(float(np.mean(np.array(v) <= 0) * 100), 1) if v else None}
