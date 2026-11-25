@@ -96,6 +96,8 @@ def _resolve(sector_or_tickers):
                 raise KeyError(s)
     else:
         t = list(sector_or_tickers)
+        if len(t) == 1 and isinstance(t[0], str) and SECTOR_ALIASES.get(t[0].lower(), t[0].lower()) in SECTORS:
+            return _resolve(t[0])            # a sector name sent as a one-element list, e.g. ["ENERGY_EQUIPMENT"]
     return [x.upper().replace(".IS", "") for x in t if x.upper() not in EXCLUDE]
 
 

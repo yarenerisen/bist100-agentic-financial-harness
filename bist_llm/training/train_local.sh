@@ -3,12 +3,12 @@
 #   bash bist_llm/training/train_local.sh            # everything: setup, smoke test, training, evaluation, traces, manifest
 #   STEPS="train eval" bash bist_llm/training/train_local.sh   # only some steps
 # Every step is skipped if its output already exists, so the script can simply be re-run after an interruption.
-# Needs: ~45 GB free disk (Qwen3-8B download 16 GB + environment 6 GB + outputs), 32 GB RAM recommended,
+# Needs: ~45 GB free disk (Qwen3.5-4B download 9 GB + environment 6 GB + outputs), 32 GB RAM recommended,
 #        internet for the first run only.
 set -euo pipefail
 cd "$(dirname "$0")/.."                       # -> bist_llm/
-MODEL="${MODEL:-Qwen/Qwen3-8B}"
-OUT="${OUT:-runs/qwen3-8b-lora}"
+MODEL="${MODEL:-Qwen/Qwen3.5-4B}"
+OUT="${OUT:-runs/qwen35-4b-lora}"
 EVAL_LIMIT="${EVAL_LIMIT:-40}"
 STEPS="${STEPS:-setup smoke train eval traces manifest}"
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
@@ -49,7 +49,7 @@ fi
 
 if has traces && [ ! -f release/execution_traces.json ]; then
   log "execution traces: 5 reference scenarios x (TR, EN)"
-  $PY -m release.make_traces --backend hf --model "$OUT" --load-4bit
+  $PY -m release.make_traces --backend hf --model "$OUT"
 fi
 
 if has manifest; then

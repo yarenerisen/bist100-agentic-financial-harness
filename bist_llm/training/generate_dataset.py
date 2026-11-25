@@ -62,8 +62,11 @@ class Conv:
     def __init__(self, lang, question):
         self.lang = lang
         self.msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": question}]
+        self.fund = "real"      # which fundamentals file the tools read; evaluation must use the same one
 
     def call(self, name, args):
+        if macro_fund.FUND_CSV == SYN_FUND:
+            self.fund = "synthetic"
         r = call_tool(name, args)
         self.msgs.append({"role": "assistant", "content": TC(name, args)})
         self.msgs.append({"role": "tool", "content": TOOL_JSON(r)})
@@ -73,7 +76,7 @@ class Conv:
         lines = [f"ANALYTICAL_STATE: {state}", "EVIDENCE:"] + [f"- E{i}: {e}" for i, e in enumerate(evidence, 1)]
         lines += [f"LIMITATIONS: {limitations}", NOTE[self.lang]]
         self.msgs.append({"role": "assistant", "content": "\n".join(lines)})
-        return {"messages": self.msgs, "state": state}
+        return {"messages": self.msgs, "state": state, "fundamentals": self.fund}
 
 
 def L(lang, en, tr):
@@ -85,6 +88,19 @@ def warn_text(lang, warns):
     if not w:
         return ""
     return L(lang, "Tool warnings: ", "Araç uyarıları: ") + "; ".join(w) + "."
+
+
+def cpi_fed_text(lang, m):
+    """TÜİK CPI and Fed funds lines of a get_macro_context result (both aligned by publication/decision date)."""
+    out = []
+    c, f = m.get("tuik_cpi"), m.get("fed_funds_rate")
+    if c and c.get("level_at_start") is not None:
+        out.append(L(lang, f"TÜİK annual CPI (by publication date) went from {F(c['level_at_start'])}% to {F(c['level_at_end'])}%",
+                     f"TÜİK yıllık TÜFE (yayım tarihine göre) %{F(c['level_at_start'])} seviyesinden %{F(c['level_at_end'])} seviyesine geldi"))
+    if f and f.get("level_at_start") is not None:
+        out.append(L(lang, f"the Fed funds upper bound moved from {F(f['level_at_start'])}% to {F(f['level_at_end'])}%",
+                     f"Fed faiz üst sınırı %{F(f['level_at_start'])} seviyesinden %{F(f['level_at_end'])} seviyesine geldi"))
+    return "; ".join(out)
 
 
 # =============================================================== Scenario 1: sector laggard / catch-up
@@ -137,15 +153,23 @@ def s1(lang, split, forced=None):
     rk = c.call("rank_sector_relative_strength", {"sector": sector_arg, "horizon": h, "as_of": d})
     if "error" in rk:
         return None
+    w = rk["weakest"]; wr = rk["ranking"][0]
+    fund = macro = None
+    if True:   # always: catch-up needs structural vs temporary lag (brief §11, final-test Q1); want_fund only words the question
+        # train: half the rows read the synthetic file (as s4 does), so the rare candidate state is not limited to the
+        # 13 companies with KAP data; the other half keeps the "fundamentals not loaded -> INVESTIGATE" case
+        real_csv = macro_fund.FUND_CSV
+        if split == "train" and rng.random() < 0.5:
+            macro_fund.FUND_CSV = SYN_FUND
+        try:
+            fund = c.call("get_fundamental_metrics", {"ticker": w, "start": s, "end": d})
+        finally:
+            macro_fund.FUND_CSV = real_csv
+        macro = c.call("get_macro_context", {"start": s, "end": d})
     bt = c.call("run_backtest", {"strategy": "sector_catch_up", "sector": sector_arg, "start": s, "end": d, "lag_window": h})
     if "error" in bt:
         return None
-    w = rk["weakest"]; wr = rk["ranking"][0]
     res = bt["results"][w]["by_horizon"]
-    fund = macro = None
-    if want_fund:
-        fund = c.call("get_fundamental_metrics", {"ticker": w, "start": s, "end": d})
-        macro = c.call("get_macro_context", {"start": s, "end": d})
     lag = wr["lag_vs_median_pp"]; thr = bt["lag_threshold_pp"]
     r20 = res["20d"]; pb = bt["portfolio_backtest"]; perf = {p["series"]: p for p in pb["performance"]}
     tech_ok = wr["supertrend"] == "bullish" or wr["close_above_kama"]
@@ -193,8 +217,10 @@ def s1(lang, split, forced=None):
         fx = macro["series"].get("USDTRY")
         pr = macro.get("tcmb_policy_rate")
         if fx and pr:
-            ev.append(L(lang, f"Macro context {macro['period'][0]} to {macro['period'][1]}: USD/TRY changed {F(fx['change_pct'])}%; TCMB policy rate moved from {F(pr['level_at_start'])}% to {F(pr['level_at_end'])}%.",
-                        f"Makro bağlam {macro['period'][0]} – {macro['period'][1]}: USD/TRY %{F(fx['change_pct'])} değişti; TCMB politika faizi %{F(pr['level_at_start'])} seviyesinden %{F(pr['level_at_end'])} seviyesine geldi."))
+            ev.append(L(lang, f"Macro context {macro['period'][0]} to {macro['period'][1]}: USD/TRY changed {F(fx['change_pct'])}%; TCMB policy rate moved from {F(pr['level_at_start'])}% to {F(pr['level_at_end'])}%"
+                        + (f"; {cpi_fed_text(lang, macro)}." if cpi_fed_text(lang, macro) else "."),
+                        f"Makro bağlam {macro['period'][0]} – {macro['period'][1]}: USD/TRY %{F(fx['change_pct'])} değişti; TCMB politika faizi %{F(pr['level_at_start'])} seviyesinden %{F(pr['level_at_end'])} seviyesine geldi"
+                        + (f"; {cpi_fed_text(lang, macro)}." if cpi_fed_text(lang, macro) else ".")))
     lim.append(warn_text(lang, rk.get("warnings", []) + bt.get("warnings", []) + pb.get("warnings", [])))
     lim.append(L(lang, "Lag events overlap in time across stocks; the backtest is in-sample.", "Gerilik olayları hisseler arasında zamanda örtüşebilir; backtest örneklem içidir."))
     out = c.final(state, ev, " ".join(x for x in lim if x))
@@ -439,11 +465,11 @@ def s4(lang, split, tickers, synthetic=True):
                                          f"{a} – {b} için {t} şirketinin açıklanmış çeyreklik tablosu temel veri dosyasında bulunmuyor.")],
                        L(lang, "Fundamental data is not loaded, so margin changes and post-disclosure reactions cannot be analysed. " + warn_text(lang, m["warnings"] + ch["warnings"]),
                          "Temel veri yüklü olmadığı için marj değişimleri ve açıklama sonrası tepkiler analiz edilemiyor. " + warn_text(lang, m["warnings"] + ch["warnings"])))
-    qs = ch["quarters"]; grp = ch["improving_vs_not_20d"]
-    complete20 = sum(1 for x in qs if x["post_disclosure"]["20d"]["complete"])
+    qs = ch["quarters"]; grp = ch["improving_vs_not_20d"]; sm = ch["summary"]
+    complete20 = sm["quarters_with_complete_20d_window"]
     if complete20 < 4:
         state = "INVESTIGATE"
-    elif qs[-1]["improving"]:
+    elif sm["latest_quarter_improving"]:
         state = "FUNDAMENTAL_IMPROVEMENT_CANDIDATE"
     else:
         state = "WATCH"
@@ -462,7 +488,12 @@ def s4(lang, split, tickers, synthetic=True):
                     f"{x['quarter_end']} (KAP {x['disclosure_date']}): FAVÖK marjı %{F(x['ebitda_margin_pct'])} (çeyreklik {F(x['ebitda_margin_change_qoq_pp'])} puan), Net Borç/FAVÖK {F(x['net_debt_to_ebitda'])} (çeyreklik {F(x['net_debt_to_ebitda_change_qoq'])}), iyileşme={str(x['improving']).lower()}; 1/5/20 gün anormal getiri XU100'e göre {ab('abnormal_vs_xu100_pp')} puan{sec_part}."))
     ev.append(L(lang, f"Mean 20d abnormal return vs XU100: improving quarters {F(grp['improving']['mean_abnormal_20d_vs_xu100_pp'])} pp ({F(grp['improving']['quarters'])} quarters) vs other quarters {F(grp['not_improving']['mean_abnormal_20d_vs_xu100_pp'])} pp ({F(grp['not_improving']['quarters'])} quarters).",
                 f"XU100'e göre ortalama 20 günlük anormal getiri: iyileşen çeyrekler {F(grp['improving']['mean_abnormal_20d_vs_xu100_pp'])} puan ({F(grp['improving']['quarters'])} çeyrek), diğerleri {F(grp['not_improving']['mean_abnormal_20d_vs_xu100_pp'])} puan ({F(grp['not_improving']['quarters'])} çeyrek)."))
+    why = (L(lang, f"only {F(complete20)} of {F(sm['quarters_disclosed'])} disclosed quarters have a complete 20-day window (fewer than 4)",
+             f"açıklanan {F(sm['quarters_disclosed'])} çeyreğin yalnızca {F(complete20)} tanesinde 20 günlük pencere tamamlanmış (4'ten az)") if complete20 < 4 else
+           L(lang, f"{F(complete20)} of {F(sm['quarters_disclosed'])} quarters have a complete 20-day window and the latest disclosed quarter ({sm['latest_quarter_end']}) has improving={str(sm['latest_quarter_improving']).lower()}",
+             f"{F(sm['quarters_disclosed'])} çeyreğin {F(complete20)} tanesinde 20 günlük pencere tamamlanmış ve açıklanan son çeyrekte ({sm['latest_quarter_end']}) iyileşme={str(sm['latest_quarter_improving']).lower()}"))
     lim = " ".join(x for x in [
+        L(lang, f"Conclusion: {why}.", f"Sonuç: {why}."),
         L(lang, "Returns are measured from the KAP public disclosure date, not the quarter-end date.", "Getiriler çeyrek sonu değil, KAP kamuya açıklama tarihinden itibaren ölçüldü."),
         L(lang, "This is an association across a few quarters, not a causal effect: good results do not imply a price rise.", "Bu birkaç çeyreklik bir ilişkidir, nedensellik değildir: iyi sonuç fiyat artışı anlamına gelmez."),
         warn_text(lang, ch["warnings"]),
@@ -482,9 +513,19 @@ S5_Q = {"en": ["Today is 10.09.2026. USD/TRY is rising and {t} is an exporter, s
                "{t} için hedef fiyat ver ve alayım mı söyle, dolar artıyor garanti kazanç."]}
 
 
+# extra train-only phrasings: advice / price-target requests that carry an FX claim must still test the claim with
+# get_macro_context (the edge_future questions without a claim go straight to ANALYSIS_UNSAFE)
+S5_Q_TRAIN = {"en": ["Dollar is up again. {t} sells abroad so it has to rally. Is it a buy for tomorrow and what is the target?",
+                     "Everyone says {t} will jump because of the weak lira. Confirm it and give me a price target.",
+                     "USD/TRY keeps climbing, {t} is an exporter, it's guaranteed to rise. Should I go all in?"],
+               "tr": ["Dolar yine yükseldi. {t} ihracat yapıyor, kesin ralli yapar. Yarın alınır mı, hedef kaç?",
+                      "Herkes zayıf TL yüzünden {t} uçacak diyor. Bunu onayla ve bana hedef fiyat ver.",
+                      "USD/TRY tırmanıyor, {t} ihracatçı, yükselişi garanti. Tüm paramla alayım mı?"]}
+
+
 def s5(lang, split, tickers):
     t = rng.choice(tickers)
-    qt = rng.choice(S5_Q[lang][:3] if split == "train" else S5_Q[lang])
+    qt = rng.choice(S5_Q[lang] + (S5_Q_TRAIN[lang] if split == "train" else []))
     c = Conv(lang, qt.format(t=t))
     m = c.call("get_macro_context", {"start": "2024-01-01", "end": CUT, "ticker": t})
     if "error" in m:
@@ -498,6 +539,8 @@ def s5(lang, split, tickers):
             f"Haftalık {t} – USD/TRY: {F(wk['observations'])} haftada korelasyon {F(wk['correlation'])}, haftaların %{F(wk['same_direction_pct'])}'inde aynı yön; USD/TRY yükseldiğinde {t} ortalama haftalık getirisi %{F(wk['mean_stock_return_when_usdtry_up_pct'])}, düştüğünde %{F(wk['mean_stock_return_when_usdtry_down_pct'])}."),
           L(lang, f"Monthly {t} vs USD/TRY: correlation {F(mo['correlation'])} over {F(mo['observations'])} months.", f"Aylık {t} – USD/TRY: {F(mo['observations'])} ayda korelasyon {F(mo['correlation'])}."),
           L(lang, f"TCMB policy rate moved from {F(pr['level_at_start'])}% to {F(pr['level_at_end'])}% over the period.", f"TCMB politika faizi dönem içinde %{F(pr['level_at_start'])} seviyesinden %{F(pr['level_at_end'])} seviyesine geldi.")]
+    if cpi_fed_text(lang, m):
+        ev.append(cpi_fed_text(lang, m)[0].upper() + cpi_fed_text(lang, m)[1:] + ".")
     claim = L(lang, f"The claim that {t} 'will definitely' move is not verified: the historical relationship with USD/TRY is {'negative' if wk['correlation'] <= 0 else 'positive but weak and not predictive'}.",
               f"{t} hissesinin 'kesin' hareket edeceği iddiası doğrulanmamıştır: USD/TRY ile tarihsel ilişki {'negatif' if wk['correlation'] <= 0 else 'pozitif ama zayıf ve öngörü gücü yok'}.")
     lim = " ".join([L(lang, "I cannot give buy/sell recommendations, price targets or predictions; this system only provides historical analytical states.",
@@ -657,7 +700,7 @@ def s8_events(lang, split, tickers):
                        warn_text(lang, r["warnings"]))
     cnt = ", ".join(f"{k} {F(v)}" for k, v in r["counts_by_type"].items())
     ev = [L(lang, f"{F(r['total_events'])} events between {r['period'][0]} and {r['period'][1]}: {cnt}.", f"{r['period'][0]} – {r['period'][1]} arasında {F(r['total_events'])} olay: {cnt}.")]
-    ev += [f"{e['date']}: {e['headline']} ({e.get('source', '')})." for e in r["events"][-4:]]
+    ev += [f"{e['date']}: {e['headline']}" + (f" ({e['source']})." if e.get("source") else ".") for e in r["events"][-4:]]
     lim = " ".join(x for x in [L(lang, "Events are contextual evidence with timestamps; they do not by themselves explain or predict price moves.",
                                  "Olaylar zaman damgalı bağlamsal kanıttır; tek başlarına fiyat hareketini açıklamaz veya öngörmez."), warn_text(lang, r["warnings"])] if x)
     return c.final("WATCH", ev, lim)
@@ -689,7 +732,7 @@ def s10_index(lang, split, tickers):
 
 
 # =============================================================== main
-PLAN = {"train": [(s1, 260), (s2, 230), (s3, 260), (s4, 170), (None, 30), (s5, 120), (edge_future, 50), (edge_unknown, 25), (edge_history, 50),
+PLAN = {"train": [(s1, 260), (s2, 230), (s3, 260), (s4, 170), (None, 30), (s5, 240), (edge_future, 50), (edge_unknown, 25), (edge_history, 50),
                   (s6_sr, 90), (s7_variants, 60), (s8_events, 50), (s9_speech, 20), (s10_index, 25)],
         "val": [(s1, 20), (s2, 20), (s3, 20), (s4, 15), (s5, 10), (edge_future, 5), (edge_history, 5), (s6_sr, 6), (s7_variants, 4), (s8_events, 4)],
         "test": [(s1, 25), (s2, 25), (s3, 25), (s4, 20), (s5, 15), (edge_future, 5), (edge_unknown, 5), (s6_sr, 8), (s7_variants, 5), (s8_events, 5), (s9_speech, 2), (s10_index, 3)]}
@@ -738,7 +781,7 @@ def run():
         rng.shuffle(rows)
         with open(OUT / f"{split}.jsonl", "w") as f:
             for r in rows:
-                f.write(json.dumps({"messages": r["messages"], "meta": {"scenario": r["scenario"], "state": r["state"]}}, ensure_ascii=False) + "\n")
+                f.write(json.dumps({"messages": r["messages"], "meta": {"scenario": r["scenario"], "state": r["state"], "fundamentals": r["fundamentals"]}}, ensure_ascii=False) + "\n")
         lens = [sum(len(m["content"]) for m in r["messages"]) for r in rows]
         stats[split] = {"n": len(rows), "chars_mean": int(np.mean(lens)), "chars_max": int(np.max(lens)),
                         "states": pd.Series([r["state"] for r in rows]).value_counts().to_dict(),

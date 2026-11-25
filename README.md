@@ -70,7 +70,12 @@ claim they contain is checked against the deterministic tools first.
 
 ### Harness states
 
-Each state exposes only a fixed subset of tools.
+Implemented in `bist_llm/harness/run_agent.py` (`STATES`). Each state exposes only its own tools and is owned by one
+agent role (Orchestrator, Market & Relative-Value, Fundamental & Macro, News & Speech, Strategy & Backtest,
+Risk & Data Quality). States only move forward: a call to a tool of an already closed state is rejected. The harness
+runs CHECK_DATA_QUALITY and RISK_GATE itself; the risk gate holds back a candidate state that has no historical
+verification output (backtest, event study or out-of-sample test). One fine-tuned model plays the reasoning roles;
+data loading and calculations stay deterministic tools. Every run logs the state sequence with the responsible agent.
 
 ```
 START → SELECT_UNIVERSE → LOAD_MARKET_DATA → CHECK_DATA_QUALITY
@@ -158,7 +163,7 @@ bist100-agentic-financial-harness/
 ├── bist_llm/
 │   ├── data/        prices.parquet, fundamentals.csv (from KAP report PDFs), policy/Fed rate files,
 │   │                download_prices.py, parse_financials.py, speech_pipeline.py
-│   ├── tools/       core, events, backtest, levels, macro_fund, context, quality + registry.py (16 MCP-style tools)
+│   ├── tools/       core, events, backtest, levels, macro_fund, context, quality + registry.py (16 tools; served over MCP by `bist_llm/mcp_server.py`)
 │   ├── training/    prompts.py, generate_dataset.py, train/val/test.jsonl, labeling_rules.md,
 │   │                finetune_qlora.py, RUN_ON_KAGGLE.md
 │   ├── harness/     run_agent.py (stateful loop, modes A–E), validate.py, evidence.py, memory.py, evaluate.py

@@ -1,7 +1,7 @@
 # BIST-Analyst — Technical Report
 
-_Draft. Sections marked **[TBD: Kaggle run]** are filled from `results/eval_*.json`, `qwen3-8b-lora/training_report.json`
-and `release/execution_traces.json` once the Qwen3-8B fine-tuning run finishes._
+_Draft. Sections marked **[TBD: Kaggle run]** are filled from `results/eval_*.json`, `runs/qwen35-4b-lora/training_report.json`
+and `release/execution_traces.json` once the Qwen3.5-4B fine-tuning run finishes._
 
 ## 1. Summary
 BIST-Analyst is a fine-tuned, locally run open-source LLM that answers research questions about BIST stocks by
@@ -15,8 +15,8 @@ computes numbers itself, never gives investment advice, and uses no data publish
 ## 2. Base model and why
 | Item | Value |
 |---|---|
-| Base model | **Qwen/Qwen3-8B** (Apache-2.0), revision **[TBD: HF commit in manifest.json]** |
-| Why | strong instruction following and JSON/tool-call ability in the 1–8B range; good Turkish and English; 8B fits 4-bit QLoRA on a 16 GB T4 and runs as a ~5 GB Q4_K_M GGUF on an 8 GB laptop GPU |
+| Base model | **Qwen/Qwen3.5-4B** (Apache-2.0, released 2026-03), revision **[TBD: HF commit in manifest.json]**; the text model is trained (the vision encoder is not loaded) |
+| Why | newest official small Qwen generation (Qwen3.8 has no open model below 27B); strong instruction following and JSON/tool-call ability in the recommended 1–8B range; good Turkish and English; runs as a ~3 GB Q4_K_M GGUF on the 6 GB laptop GPU used for the live demo, and fine-tunes on one 24 GB GPU |
 | Thinking mode | disabled; every assistant turn starts with an empty `<think></think>` block in training and inference (`training/prompts.py`) so multi-turn tool conversations are formatted identically |
 | Additional comparison | Qwen2.5-3B-Instruct fine-tuned on the same data on a local RTX 4070 Laptop GPU (Appendix A) |
 
@@ -27,8 +27,16 @@ computes numbers itself, never gives investment advice, and uses no data publish
   fundamentals and post-disclosure abnormal returns, macro context, official event calendar, speech features,
   data-quality gate.
 - **Registry guarantees:** argument validation, `LOOKAHEAD_BLOCKED` for any date after 2026-09-10, compact model-facing output.
-- **Stateful harness** (`bist_llm/harness/run_agent.py`): PLAN_TOOL_CALL → VALIDATE_CALL → EXECUTE_TOOL → QUALITY_GATE →
-  VALIDATE_ANSWER (one retry) → BUILD_EVIDENCE → HUMAN_REVIEW → LOG_AND_CLOSE. Every run is logged with timestamps,
+- **MCP:** `bist_llm/mcp_server.py` serves the same 16 tools plus `build_evidence_bundle` over MCP (stdio), with the same
+  validation and look-ahead block; the harness calls the registry in-process.
+- **Stateful harness** (`bist_llm/harness/run_agent.py`, `STATES`): the 16 states of the project brief, START →
+  SELECT_UNIVERSE → LOAD_MARKET_DATA → CHECK_DATA_QUALITY → CALCULATE_TECHNICALS → RUN_SECTOR_RELATIVE_ANALYSIS →
+  RUN_PATTERN_AND_REVERSAL_ANALYSIS → LOAD_FUNDAMENTALS → LOAD_MACRO_CONTEXT → LOAD_NEWS_AND_SPEECH_CONTEXT →
+  BUILD_EVIDENCE → PREVIEW_STRATEGIES → RUN_BACKTEST → RISK_GATE → GENERATE_EXPLANATION → HUMAN_REVIEW → LOG_AND_CLOSE.
+  Each state exposes only its own tools and is owned by one agent role; states only move forward (a call to a closed
+  state is rejected). The harness runs the data-quality gate and the risk gate, which holds back a candidate state
+  without a historical verification output. The answer is validated (one retry, then a labelled fallback). One
+  fine-tuned model plays the reasoning roles; data and calculations stay deterministic tools. Every run is logged with timestamps,
   prompts, model turns, tool calls and outputs, decoding parameters (temperature 0, seed 0) and `answer_source`.
 - **Knowledge base** (`release/knowledge_base.json`): deterministic, tool-based retrieval over timestamped sources —
   Yahoo Finance prices, 91 parsed KAP financial reports (with PDF SHA-256), CBRT/FOMC decisions, sector map.
@@ -38,7 +46,8 @@ computes numbers itself, never gives investment advice, and uses no data publish
 - Fundamentals: KAP financial report PDFs for 13 non-bank companies, reports 2024Q4 – 2026Q2, parsed by
   `data/parse_financials.py`; disclosure date = board-approval date; quarterly values are YTD differences (TMS 29
   restatement makes them approximate); AKBNK excluded (EBITDA ratios not meaningful for banks).
-- Macro: CBRT policy-rate and FOMC decisions. TurkStat CPI and a licensed news feed are not available.
+- Macro: CBRT policy-rate and FOMC decisions, TÜİK CPI (monthly, aligned by bulletin publication date), all checked
+  against official sources (`data/MACRO_SOURCES.md`). A licensed news feed is not available.
 - Data dictionary: `docs/data_dictionary.md`.
 
 ## 5. Fine-tuning data
@@ -75,7 +84,7 @@ computes numbers itself, never gives investment advice, and uses no data publish
 
 ## 7. Running the model locally
 - Transformers: `python -m harness.run_agent --backend hf --model <adapter> --load-4bit "<question>"`
-- Fully offline: Q4_K_M GGUF (~5 GB) with llama.cpp (`--backend llamacpp`) or Ollama (`--backend ollama`). The raw
+- Fully offline: Q4_K_M GGUF (~3 GB) with llama.cpp (`--backend llamacpp`) or Ollama (`--backend ollama`). The raw
   backends send the exact training-format prompt.
 - The harness refuses non-localhost model endpoints, so no cloud AI API is called.
 
@@ -83,7 +92,7 @@ computes numbers itself, never gives investment advice, and uses no data publish
 Same first 40 test rows for base and fine-tuned models; ablation on the first 20 rows.
 
 ### 8.1 Base vs fine-tuned (full harness, level E) — **[TBD: Kaggle run]**
-| Metric | Base Qwen3-8B | Fine-tuned |
+| Metric | Base Qwen3.5-4B | Fine-tuned |
 |---|---|---|
 | Numerical hallucination rate | | |
 | Invalid tool-call rate | | |
@@ -95,6 +104,7 @@ Same first 40 test rows for base and fine-tuned models; ablation on the first 20
 | Mean latency | | |
 
 ### 8.2 Raw base model without tools or data (5 reference scenario questions)
+_Measured with the earlier base model Qwen3-8B (`training/baseline/`); the Qwen3.5-4B raw-LLM numbers are ablation level A in 8.3._
 | Metric | Value |
 |---|---|
 | Answers with invented numbers | 100% (17.2 per answer) |

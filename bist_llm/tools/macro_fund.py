@@ -164,5 +164,10 @@ def calculate_fundamental_change(ticker, start="2024-01-01", end="2026-09-10", h
             "quarters": len(sub),
             "mean_abnormal_20d_vs_xu100_pp": round(float(np.mean([q["post_disclosure"]["20d"]["abnormal_vs_xu100_pp"] for q in sub])), 2) if sub else None}
     out["improving_vs_not_20d"] = grp
+    if out["quarters"]:   # decision inputs computed here so the model reads them instead of counting nested fields
+        out["summary"] = {"quarters_disclosed": len(out["quarters"]),
+                          "quarters_with_complete_20d_window": sum(q["post_disclosure"]["20d"]["complete"] for q in out["quarters"]),
+                          "latest_quarter_end": out["quarters"][-1]["quarter_end"],
+                          "latest_quarter_improving": out["quarters"][-1]["improving"]}
     out["notes"] = ["association only; no causal claim", "small sample (few quarters)"]
     return out

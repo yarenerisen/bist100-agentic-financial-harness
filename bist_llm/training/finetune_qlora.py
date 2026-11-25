@@ -2,16 +2,16 @@
 
 Kaggle/Colab setup (one cell):
     !pip install -q -U "transformers>=4.45" "peft>=0.13" "bitsandbytes>=0.44" accelerate datasets
-Run (project base model: Qwen/Qwen3-8B):
-    !python training/finetune_qlora.py --model Qwen/Qwen3-8B --out /kaggle/working/qwen3-8b-lora --epochs 1 --liger
-Then merge for GGUF export:
-    !python training/finetune_qlora.py --merge --model Qwen/Qwen3-8B --out /kaggle/working/qwen3-8b-lora --merged-out /tmp/merged
+Run (project base model: Qwen/Qwen3.5-4B; Qwen3-8B also works):
+    !python training/finetune_qlora.py --model Qwen/Qwen3.5-4B --out /kaggle/working/qwen35-4b-lora --epochs 1 --liger
+Then merge for vLLM / GGUF export:
+    !python training/finetune_qlora.py --merge --model Qwen/Qwen3.5-4B --out /kaggle/working/qwen35-4b-lora --merged-out /tmp/merged
 """
-import argparse, json, math, os, random, time
+import argparse, inspect, json, math, os, random, time
 from pathlib import Path
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--model", default="Qwen/Qwen3-8B")
+ap.add_argument("--model", default="Qwen/Qwen3.5-4B")
 ap.add_argument("--data", default=str(Path(__file__).resolve().parent))
 ap.add_argument("--out", default="bist-lora")
 ap.add_argument("--max-len", type=int, default=6144)
@@ -28,6 +28,9 @@ ap.add_argument("--save-steps", type=int, default=20, help="checkpoint every N o
 ap.add_argument("--liger", action="store_true", help="fused linear+cross-entropy (pip install liger-kernel): avoids materialising "
                 "the 152k-vocab logits, needed for long sequences on 8 GB GPUs")
 a = ap.parse_args()
+# attention + MLP projections; in_proj_qkv / in_proj_z / out_proj are Qwen3.5's linear-attention (Gated DeltaNet) layers,
+# absent in other models (PEFT only needs one name to match)
+LORA_TARGETS = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj", "in_proj_qkv", "in_proj_z", "out_proj"]
 
 import torch
 # QLoRA + Liger need every tensor on one device: on multi-GPU machines (Kaggle T4 x2) train on GPU 0 only
@@ -39,7 +42,7 @@ tok.pad_token = tok.pad_token or tok.eos_token
 
 if a.merge:
     from peft import PeftModel
-    base = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=torch.float16, device_map="cpu")
+    base = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=torch.bfloat16, device_map="cpu")   # bf16: Qwen3.5 overflows less than fp16
     m = PeftModel.from_pretrained(base, a.out).merge_and_unload()
     dst = a.merged_out or a.out + "-merged"
     m.save_pretrained(dst, safe_serialization=True); tok.save_pretrained(dst)
@@ -98,7 +101,13 @@ if a.liger:
     from transformers import AutoConfig
     mt = AutoConfig.from_pretrained(a.model).model_type
     import liger_kernel.transformers as lk
-    getattr(lk, f"apply_liger_kernel_to_{mt}")(rope=True, rms_norm=True, swiglu=True, fused_linear_cross_entropy=True, cross_entropy=False)
+    fn = getattr(lk, f"apply_liger_kernel_to_{mt}")
+    want = dict(rope=True, rms_norm=True, swiglu=True, fused_linear_cross_entropy=True, cross_entropy=False)
+    kw = {k: v for k, v in want.items() if k in inspect.signature(fn).parameters}   # patch functions differ per model
+    try:
+        fn(**kw)
+    except NotImplementedError:      # e.g. Qwen3.5 has no Liger RoPE kernel; keep the other kernels
+        fn(**{**kw, "rope": False})
     print(f"liger kernels applied ({mt})")
 bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
 model = AutoModelForCausalLM.from_pretrained(
@@ -108,7 +117,7 @@ model = AutoModelForCausalLM.from_pretrained(
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
 model = get_peft_model(model, LoraConfig(r=a.rank, lora_alpha=a.alpha, lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
-                                         target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]))
+                                         target_modules=LORA_TARGETS))
 model.print_trainable_parameters()
 
 import inspect
@@ -145,7 +154,7 @@ trainer.save_model(a.out); tok.save_pretrained(a.out)
 hist = {"base_model": a.model, "chat_rendering": STYLE, "train_examples": len(train), "val_examples": len(val),
         "hyperparameters": {"method": "QLoRA", "quantization": "4-bit NF4, double quantization", "compute_dtype": "bf16" if bf16 else "fp16",
                             "lora_rank": a.rank, "lora_alpha": a.alpha, "lora_dropout": 0.05,
-                            "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+                            "target_modules": LORA_TARGETS,
                             "epochs": a.epochs, "learning_rate": a.lr, "lr_scheduler": "cosine", "warmup": 0.05,
                             "per_device_batch_size": 1, "gradient_accumulation_steps": a.grad_accum,
                             "effective_batch_size": a.grad_accum, "max_sequence_length": a.max_len,

@@ -11,7 +11,7 @@ from a tool output (verified by `harness/validate.py`: 0 violations across 1,410
 | | 20d hit rate ≥ 55%, mean rel. return after cost > 0, and Supertrend bullish or close > KAMA | POTENTIAL_CATCH_UP_CANDIDATE |
 | | 20d hit rate < 45% | REJECT_SIGNAL |
 | | otherwise | WATCH |
-| | candidate but fundamentals not loaded (when asked for structural vs temporary) | downgraded to INVESTIGATE |
+| | candidate but fundamentals not loaded (fundamentals and macro are always checked to separate structural from temporary lag) | downgraded to INVESTIGATE |
 | S2 weekday | in-sample p ≤ 0.0016 (Bonferroni, 32 patterns) and ≥ 10 occurrences and OOS tradable mean after cost > 0 and OOS p < 0.05 | WATCH |
 | | in-sample significant but not confirmed OOS | INVESTIGATE |
 | | not significant after multiple-testing correction | REJECT_SIGNAL |

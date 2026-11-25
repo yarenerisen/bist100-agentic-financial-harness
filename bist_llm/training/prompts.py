@@ -4,22 +4,30 @@ ACTIONS = ["HOLD", "WATCH", "INVESTIGATE", "POTENTIAL_CATCH_UP_CANDIDATE", "TECH
            "FUNDAMENTAL_IMPROVEMENT_CANDIDATE", "REJECT_SIGNAL", "ANALYSIS_UNSAFE"]
 
 TOOL_LINES = """\
+[LOAD_MARKET_DATA]
 get_stock_history(ticker, start, end)
 get_index_history(index=XU100, start, end)
-find_support_resistance(ticker, start, end)
-preview_strategy_variants(tickers, start, end, oos_start)  # variants A technical .. D +macro, E news; in-sample vs out-of-sample
-get_news_events(ticker, topic, start, end)  # official timestamped events: KAP disclosures, TCMB/FOMC decisions; topic: earnings|rates
-get_speech_features(topic, ticker)  # pre-approved finance video transcripts
+[CALCULATE_TECHNICALS]
+calculate_indicators(ticker, start, end)
+[RUN_SECTOR_RELATIVE_ANALYSIS]
 rank_sector_relative_strength(sector, horizon=20, as_of)  # sector = name or list of tickers
-run_backtest(strategy, sector|tickers, start, end, lag_window=20, lag_threshold_pp=5.0, require_strong_sector=false, hold_days)  # strategy: sector_catch_up | weekday_mon_wed_down | an event name
+[RUN_PATTERN_AND_REVERSAL_ANALYSIS]
 test_weekday_pattern(ticker, pattern, start, end)  # pattern: 5 letters Mon..Fri, U=up D=down X=any, e.g. DDDUU
 detect_multiday_patterns(ticker, pattern_type, n_days=3, threshold_pct=-3.0, horizon=2, start, end)  # consecutive_down|consecutive_up|large_down_day|large_up_day
-calculate_indicators(ticker, start, end)
 detect_reversal_events(ticker, event, start, end)  # lower_bollinger_touch|upper_bollinger_touch|middle_bollinger_test|rsi_trough|rsi_peak|supertrend_bullish_flip|supertrend_bearish_flip|kama_cross_up|kama_cross_down|ichimoku_cloud_breakout|ichimoku_cloud_breakdown
+find_support_resistance(ticker, start, end)
+[LOAD_FUNDAMENTALS]
 get_fundamental_metrics(ticker, start, end)
 calculate_fundamental_change(ticker, start, end)
-get_macro_context(start, end, ticker)
-check_data_quality(tickers, start, end)"""
+[LOAD_MACRO_CONTEXT]
+get_macro_context(start, end, ticker)  # USD/TRY, EUR/TRY, TCMB policy rate, Fed funds rate, TUIK CPI
+[LOAD_NEWS_AND_SPEECH_CONTEXT]
+get_news_events(ticker, topic, start, end)  # official timestamped events: KAP disclosures, TCMB/FOMC decisions; topic: earnings|rates
+get_speech_features(topic, ticker)  # pre-approved finance video transcripts
+[PREVIEW_STRATEGIES]
+preview_strategy_variants(tickers, start, end, oos_start)  # variants A technical .. D +macro, E news; in-sample vs out-of-sample
+[RUN_BACKTEST]
+run_backtest(strategy, sector|tickers, start, end, lag_window=20, lag_threshold_pp=5.0, require_strong_sector=false, hold_days)  # strategy: sector_catch_up | weekday_mon_wed_down | an event name"""
 
 SECTOR_NAMES = ("banking, retail, holding, steel, automotive, food_beverage, airlines, aviation_services, telecom, utilities, "
                 "energy_equipment, chemicals, petroleum, cement, glass, defense, mining, insurance, brokerage, healthcare, reit, durables, construction, technology")
@@ -27,7 +35,8 @@ SECTOR_NAMES = ("banking, retail, holding, steel, automotive, food_beverage, air
 SYSTEM_PROMPT = f"""You are BIST-Analyst, an educational financial-analysis assistant for Borsa Istanbul stocks.
 Python tools calculate; you interpret. Analysis date: 2026-09-10. Data period: 2024-01-01 to 2026-09-10. Never use or request any date after 2026-09-10.
 
-TOOLS (call one at a time):
+TOOLS, grouped by workflow state in order (call one at a time; states only move forward, so after a tool from a later
+state you cannot call one from an earlier state; the harness runs the data-quality and risk gates itself):
 {TOOL_LINES}
 Sectors: {SECTOR_NAMES}.
 

@@ -4,7 +4,7 @@ user prompts, every model turn with timestamps and raw output, every tool call w
 and outputs, the quality gate, the evidence bundle, the final answer, answer_source (model / model_after_validation_retry
 / harness_fallback) and code version.
 Usage (from bist_llm/):
-  python -m release.make_traces --backend hf --model /path/to/qwen3-8b-lora --load-4bit
+  python -m release.make_traces --backend hf --model /path/to/qwen35-4b-lora --load-4bit
   python -m release.make_traces --backend llamacpp                          # local GGUF server
   python -m release.make_traces --backend hf --model ... --question "live question" --out release/live_trace.json"""
 import argparse, json, sys, time
@@ -15,7 +15,7 @@ from harness.run_agent import run, make_backend   # noqa: E402
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--backend", default="hf", choices=["openai", "hf", "llamacpp", "ollama"])
+    ap.add_argument("--backend", default="hf", choices=["openai", "hf", "llamacpp", "ollama", "vllm"])
     ap.add_argument("--model", default="bist-analyst")
     ap.add_argument("--base-url", default="http://127.0.0.1:8080/v1")
     ap.add_argument("--load-4bit", action="store_true")
