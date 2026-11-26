@@ -116,6 +116,13 @@ model = AutoModelForCausalLM.from_pretrained(
                                            bnb_4bit_compute_dtype=torch.bfloat16 if bf16 else torch.float16))
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
+# prepare_model_for_kbit_training upcasts every non-quantized weight to fp32; for Qwen3.5 that includes the frozen,
+# tied 248k x 2560 embedding / lm_head (1.3 GB -> 2.5 GB, plus a bf16 copy per loss chunk), which does not fit on 8 GB.
+# It is not trained, so keep it in the compute dtype (layer norms stay fp32).
+_cdt = torch.bfloat16 if bf16 else torch.float16
+for _m in {model.get_input_embeddings(), model.get_output_embeddings()}:
+    if _m is not None:
+        _m.to(_cdt)
 model = get_peft_model(model, LoraConfig(r=a.rank, lora_alpha=a.alpha, lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
                                          target_modules=LORA_TARGETS))
 model.print_trainable_parameters()
