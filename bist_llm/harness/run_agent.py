@@ -61,7 +61,7 @@ VERIFY_TOOLS = {"run_backtest", "preview_strategy_variants", "detect_reversal_ev
 CANDIDATE_STATES = {"POTENTIAL_CATCH_UP_CANDIDATE", "TECHNICAL_REVERSAL_CANDIDATE", "FUNDAMENTAL_IMPROVEMENT_CANDIDATE"}
 
 
-DECODING = {"temperature": 0.0, "do_sample": False, "top_p": 1.0, "seed": 0, "max_new_tokens": 1500}
+DECODING = {"temperature": 0.0, "do_sample": False, "top_p": 1.0, "seed": 0, "max_new_tokens": 3000}
 
 
 def _now():
@@ -100,7 +100,7 @@ class OpenAIBackend:
         import urllib.request
         # tool messages are sent as user turns wrapped in <tool_response>, identical to the Qwen chat templates
         msgs = [{"role": "user", "content": f"<tool_response>\n{m['content']}\n</tool_response>"} if m["role"] == "tool" else m for m in messages]
-        body = json.dumps({"model": self.model, "messages": msgs, "temperature": 0, "top_p": 1, "seed": 0, "max_tokens": 1500}).encode()
+        body = json.dumps({"model": self.model, "messages": msgs, "temperature": 0, "top_p": 1, "seed": 0, "max_tokens": DECODING["max_new_tokens"]}).encode()
         req = urllib.request.Request(self.url, body, {"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=600) as r:
             return json.loads(r.read())["choices"][0]["message"]["content"]
@@ -175,15 +175,15 @@ class RawBackend:
         import urllib.request
         prompt = render_prompt(messages, self.style)
         if self.kind == "llamacpp":
-            url, body = self.url + "/completion", {"prompt": prompt, "temperature": 0, "seed": 0, "n_predict": 1500,
+            url, body = self.url + "/completion", {"prompt": prompt, "temperature": 0, "seed": 0, "n_predict": DECODING["max_new_tokens"],
                                                     "stop": ["<|im_end|>"], "cache_prompt": True}
         elif self.kind == "vllm":     # vLLM OpenAI server, raw prompt; --model is the base model or a served LoRA name
             url, body = self.url + "/v1/completions", {"model": self.model, "prompt": prompt, "temperature": 0, "seed": 0,
-                                                       "max_tokens": 1500, "stop": ["<|im_end|>"]}
+                                                       "max_tokens": DECODING["max_new_tokens"], "stop": ["<|im_end|>"]}
         else:
             url, body = self.url + "/api/generate", {"model": self.model, "prompt": prompt, "raw": True, "stream": False,
-                                                     "options": {"temperature": 0, "seed": 0, "num_predict": 1500,
-                                                                 "num_ctx": 8192, "stop": ["<|im_end|>"]}}
+                                                     "options": {"temperature": 0, "seed": 0, "num_predict": DECODING["max_new_tokens"],
+                                                                 "num_ctx": 12288, "stop": ["<|im_end|>"]}}
         req = urllib.request.Request(url, json.dumps(body).encode(), {"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=900) as r:
             d = json.loads(r.read())

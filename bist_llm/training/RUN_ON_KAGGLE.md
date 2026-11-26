@@ -69,14 +69,14 @@ python llama.cpp/convert_hf_to_gguf.py runs/bist-merged --outfile bist-analyst-q
 ## 6) Run locally without internet
 llama.cpp:
 ```bash
-llama-server -m bist-analyst-q8_0.gguf -c 8192 --port 8080
+llama-server -m bist-analyst-q8_0.gguf -c 12288 --port 8080
 python -m harness.run_agent --backend openai --base-url http://127.0.0.1:8080/v1 "Does THYAO show a Mon-Wed down, Thu-Fri up pattern?"
 ```
 Ollama (`Modelfile`):
 ```
 FROM ./bist-analyst-q8_0.gguf
 PARAMETER temperature 0
-PARAMETER num_ctx 8192
+PARAMETER num_ctx 12288
 ```
 ```bash
 ollama create bist-analyst -f Modelfile

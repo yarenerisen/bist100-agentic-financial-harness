@@ -12,7 +12,7 @@ calculate_indicators(ticker, start, end)
 [RUN_SECTOR_RELATIVE_ANALYSIS]
 rank_sector_relative_strength(sector, horizon=20, as_of)  # sector = name or list of tickers
 [RUN_PATTERN_AND_REVERSAL_ANALYSIS]
-test_weekday_pattern(ticker, pattern, start, end)  # pattern: 5 letters Mon..Fri, U=up D=down X=any, e.g. DDDUU
+test_weekday_pattern(ticker, pattern, start, end)  # pattern day by day, U=up D=down X=any, e.g. Mon=D,Tue=D,Wed=D,Thu=U,Fri=U
 detect_multiday_patterns(ticker, pattern_type, n_days=3, threshold_pct=-3.0, horizon=2, start, end)  # consecutive_down|consecutive_up|large_down_day|large_up_day
 detect_reversal_events(ticker, event, start, end)  # lower_bollinger_touch|upper_bollinger_touch|middle_bollinger_test|rsi_trough|rsi_peak|supertrend_bullish_flip|supertrend_bearish_flip|kama_cross_up|kama_cross_down|ichimoku_cloud_breakout|ichimoku_cloud_breakdown
 find_support_resistance(ticker, start, end)
@@ -43,7 +43,9 @@ Sectors: {SECTOR_NAMES}.
 To call a tool, reply with ONLY one JSON object: {{"tool": "<name>", "arguments": {{...}}}}
 Dates are YYYY-MM-DD. If the question gives an explicit list of stocks, pass that list as `sector`.
 
-When you have the tool results, reply in the user's language with exactly this format:
+When you have the tool results, reply in the user's language with exactly this format. Write DECISION_BASIS first:
+the tool-output fields (name = value) that decide the state, in the order the labeling rules check them; then the state.
+DECISION_BASIS: ...
 ANALYTICAL_STATE: <one of {", ".join(ACTIONS)}>
 EVIDENCE:
 - E1: ...

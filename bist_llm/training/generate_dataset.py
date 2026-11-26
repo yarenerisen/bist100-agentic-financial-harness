@@ -2,7 +2,7 @@
 Answers are rule-based templates that copy numbers verbatim from tool outputs (no invented numbers).
 Usage:  python -m training.generate_dataset            (from bist_llm/)
 Outputs: training/train.jsonl, val.jsonl, test.jsonl, stats printed."""
-import json, random, sys
+import json, random, re, sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from tools import core, macro_fund                       # noqa: E402
-from tools.registry import call_tool                     # noqa: E402
+from tools.registry import call_tool, pattern_by_day     # noqa: E402
 from training.prompts import SYSTEM_PROMPT               # noqa: E402
 
 OUT = ROOT / "training"
@@ -72,8 +72,21 @@ class Conv:
         self.msgs.append({"role": "tool", "content": TOOL_JSON(r)})
         return r
 
-    def final(self, state, evidence, limitations):
-        lines = [f"ANALYTICAL_STATE: {state}", "EVIDENCE:"] + [f"- E{i}: {e}" for i, e in enumerate(evidence, 1)]
+    def final_b(self, state, basis, evidence, limitations):
+        return self.final(state, evidence, limitations, basis)
+
+    def final(self, state, evidence, limitations, basis=None):
+        """DECISION_BASIS comes first so the state is written after the deciding tool fields, not before them.
+        Without an explicit basis the leading 'Conclusion: ...' sentence of the limitations is moved there."""
+        if basis is None:
+            m = re.match(r"(?:Conclusion|Sonuç): (.+?)\.(?:\s+|$)(.*)", limitations, re.S)
+            if not m:
+                raise ValueError(f"no decision basis for state {state}: {limitations[:80]}")
+            basis, limitations = m.group(1), m.group(2).strip()
+        basis = basis.rstrip(". ")
+        if not limitations:
+            limitations = L(self.lang, "Historical, in-sample statistics only.", "Yalnızca tarihsel istatistiklerdir.")
+        lines = [f"DECISION_BASIS: {basis} -> {state}.", f"ANALYTICAL_STATE: {state}", "EVIDENCE:"] + [f"- E{i}: {e}" for i, e in enumerate(evidence, 1)]
         lines += [f"LIMITATIONS: {limitations}", NOTE[self.lang]]
         self.msgs.append({"role": "assistant", "content": "\n".join(lines)})
         return {"messages": self.msgs, "state": state, "fundamentals": self.fund}
@@ -190,19 +203,19 @@ def s1(lang, split, forced=None):
         state = "WATCH"; why = L(lang, f"lag_at_or_beyond_threshold = false: the lag of {F(lag)} pp is smaller than the {F(thr)} pp threshold, so there is no material laggard",
                                 f"lag_at_or_beyond_threshold = false: {F(lag)} puanlık gerilik {F(thr)} puanlık eşikten küçük, belirgin bir geride kalan yok")
     elif not rk["sector_strong"]:
-        state = "WATCH"; why = L(lang, "sector_strong = false: the sector itself is not strong, so the catch-up premise does not hold",
+        state = "WATCH"; why = "lag_at_or_beyond_threshold = true; " + L(lang, "sector_strong = false: the sector itself is not strong, so the catch-up premise does not hold",
                                  "sector_strong = false: sektörün kendisi güçlü değil, catch-up varsayımı sağlanmıyor")
     elif not di["at_least_10_events"]:
-        state = "INVESTIGATE"; why = L(lang, f"at_least_10_events = false: only {F(di['events'])} comparable 20-day events exist, too few to verify",
+        state = "INVESTIGATE"; why = "lag_at_or_beyond_threshold = true; sector_strong = true; " + L(lang, f"at_least_10_events = false: only {F(di['events'])} comparable 20-day events exist, too few to verify",
                                        f"at_least_10_events = false: yalnızca {F(di['events'])} karşılaştırılabilir 20 günlük olay var, doğrulamak için az")
     elif di["hit_rate_at_least_55"] and di["mean_after_cost_positive"] and tech_ok:
-        state = "POTENTIAL_CATCH_UP_CANDIDATE"; why = L(lang, "sector_strong = true, lag_at_or_beyond_threshold = true, hit_rate_at_least_55 = true, mean_after_cost_positive = true and the technical trend is stabilising (Supertrend bullish or close above KAMA)",
-                                                        "sector_strong = true, lag_at_or_beyond_threshold = true, hit_rate_at_least_55 = true, mean_after_cost_positive = true ve teknik trend toparlanıyor (Supertrend yükselişte veya kapanış KAMA üzerinde)")
+        state = "POTENTIAL_CATCH_UP_CANDIDATE"; why = L(lang, "lag_at_or_beyond_threshold = true, sector_strong = true, at_least_10_events = true, hit_rate_at_least_55 = true, mean_after_cost_positive = true and the technical trend is stabilising (Supertrend bullish or close above KAMA)",
+                                                        "lag_at_or_beyond_threshold = true, sector_strong = true, at_least_10_events = true, hit_rate_at_least_55 = true, mean_after_cost_positive = true ve teknik trend toparlanıyor (Supertrend yükselişte veya kapanış KAMA üzerinde)")
     elif di["hit_rate_below_45"]:
-        state = "REJECT_SIGNAL"; why = L(lang, f"hit_rate_below_45 = true: historically the 20-day hit rate was only {F(di['hit_rate_pct'])}%, laggards mostly kept underperforming",
+        state = "REJECT_SIGNAL"; why = "lag_at_or_beyond_threshold = true; sector_strong = true; at_least_10_events = true; " + L(lang, f"hit_rate_below_45 = true: historically the 20-day hit rate was only {F(di['hit_rate_pct'])}%, laggards mostly kept underperforming",
                                          f"hit_rate_below_45 = true: tarihsel 20 günlük isabet oranı yalnızca %{F(di['hit_rate_pct'])}, geride kalanlar çoğunlukla zayıf kalmaya devam etmiş")
     else:
-        state = "WATCH"; why = L(lang, "historical evidence is mixed (hit_rate_at_least_55 = false and hit_rate_below_45 = false, or costs / technical trend not supportive)",
+        state = "WATCH"; why = "lag_at_or_beyond_threshold = true; sector_strong = true; at_least_10_events = true; " + L(lang, "historical evidence is mixed (hit_rate_at_least_55 = false and hit_rate_below_45 = false, or costs / technical trend not supportive)",
                                  "tarihsel kanıt karışık (hit_rate_at_least_55 = false ve hit_rate_below_45 = false, ya da maliyet / teknik trend destekleyici değil)")
     ev = [L(lang, f"Over {F(rk['horizon_trading_days'])} trading days ({rk['window_start']} to {rk['window_end']}) the peer median return was {F(rk['sector_median_return_pct'])}% and XU100 returned {F(rk['xu100_return_pct'])}%; sector_strong = {str(rk['sector_strong']).lower()}.",
               f"{F(rk['horizon_trading_days'])} işlem gününde ({rk['window_start']} – {rk['window_end']}) akran medyan getirisi %{F(rk['sector_median_return_pct'])}, XU100 getirisi %{F(rk['xu100_return_pct'])}; sector_strong = {str(rk['sector_strong']).lower()}."),
@@ -227,7 +240,9 @@ def s1(lang, split, forced=None):
                          f"{w} için temel veri yüklü değil; geriliğin yapısal mı geçici mi olduğu ayrılamıyor."))
             if state == "POTENTIAL_CATCH_UP_CANDIDATE":
                 state = "INVESTIGATE"
-                lim.append(L(lang, "The label is downgraded to INVESTIGATE until fundamentals are checked.", "Temel veriler kontrol edilene kadar etiket INVESTIGATE'e düşürüldü."))
+                why += L(lang, "; but fundamentals are not loaded, so the candidate label is downgraded until they are checked",
+                         "; ancak temel veri yüklü değil, bu yüzden aday etiketi temel veriler kontrol edilene kadar düşürüldü")
+                lim[0] = L(lang, f"Conclusion: {why}.", f"Sonuç: {why}.")
         fx = macro["series"].get("USDTRY")
         pr = macro.get("tcmb_policy_rate")
         if fx and pr:
@@ -284,8 +299,9 @@ def s2(lang, split, tickers):
     qt = rng.choice(S2_Q[lang][:3] if split == "train" else S2_Q[lang])
     q = qt.format(t=t, desc=pat_desc(p, lang), a=show_date(a, lang), b=show_date(b, lang), c=show_date(cc, lang), d=show_date(d, lang))
     c = Conv(lang, q)
-    i = c.call("test_weekday_pattern", {"ticker": t, "pattern": p, "start": a, "end": b})
-    o = c.call("test_weekday_pattern", {"ticker": t, "pattern": p, "start": cc, "end": d})
+    # the model writes the pattern day by day (Mon=D,...): mapping each named day is easier than compressing to DDDUU
+    i = c.call("test_weekday_pattern", {"ticker": t, "pattern": pattern_by_day(p), "start": a, "end": b})
+    o = c.call("test_weekday_pattern", {"ticker": t, "pattern": pattern_by_day(p), "start": cc, "end": d})
     if "error" in i or "error" in o:
         return None
     sig_is = i["binomial_p_value_one_sided"] <= 0.0016 and i["pattern_occurrences"] >= 10
@@ -306,6 +322,8 @@ def s2(lang, split, tickers):
     ev = [blk(i, tin), trd(i, tin), blk(o, tout), trd(o, tout),
           L(lang, f"In-sample mean daily returns: Mon {F(ws['Mon']['mean_pct'])}%, Tue {F(ws['Tue']['mean_pct'])}%, Wed {F(ws['Wed']['mean_pct'])}%, Thu {F(ws['Thu']['mean_pct'])}%, Fri {F(ws['Fri']['mean_pct'])}%.",
             f"Örneklem içi ortalama günlük getiriler: Pzt %{F(ws['Mon']['mean_pct'])}, Sal %{F(ws['Tue']['mean_pct'])}, Çar %{F(ws['Wed']['mean_pct'])}, Per %{F(ws['Thu']['mean_pct'])}, Cum %{F(ws['Fri']['mean_pct'])}.")]
+    why = L(lang, f"in-sample p = {F(i['binomial_p_value_one_sided'])} with {F(i['pattern_occurrences'])} occurrences, out-of-sample p = {F(o['binomial_p_value_one_sided'])}: ",
+            f"örneklem içi p = {F(i['binomial_p_value_one_sided'])}, {F(i['pattern_occurrences'])} kez; örneklem dışı p = {F(o['binomial_p_value_one_sided'])}: ") + why
     lim = " ".join(x for x in [L(lang, f"Conclusion: {why}.", f"Sonuç: {why}."),
                                L(lang, "Multiple-testing risk: there are 32 possible Mon–Fri up/down patterns, so the Bonferroni threshold is p < 0.0016; searching many patterns produces false discoveries by chance.",
                                  "Çoklu test riski: 32 olası Pzt–Cum yukarı/aşağı deseni var, Bonferroni eşiği p < 0.0016; çok sayıda desen aramak tesadüfen sahte bulgular üretir."),
@@ -402,6 +420,12 @@ def s3(lang, split, tickers):
         state, why = "REJECT_SIGNAL", L(lang, f"the success rate of {F(sr)}% is not better than a coin flip", f"%{F(sr)} başarı oranı yazı-turadan iyi değil")
     else:
         state, why = "WATCH", L(lang, "results are mixed", "sonuçlar karışık")
+    if n >= 10:   # the basis lists the summary flags in the order the rule checks them
+        why = (f"at_least_10_complete_events = true; success_rate_pct = {F(sr)}, success_rate_at_least_60 = {str(sr >= 60).lower()}, "
+               + (f"event_in_last_10_trading_days = {str(recent).lower()}" if sr >= 60 else f"success_rate_below_50 = {str(sr < 50).lower()}")
+               + ": " + why)
+    else:
+        why = "at_least_10_complete_events = false: " + why
     def gl(name, label):
         s = g[name]
         if s["events_with_complete_window"] == 0:
@@ -476,7 +500,7 @@ def s4(lang, split, tickers, synthetic=True):
     if "error" in m or "error" in ch:
         return None
     if not ch["quarters"]:
-        return c.final("INVESTIGATE", [L(lang, f"No disclosed quarterly statements for {t} are available in the fundamentals data for {a} to {b}.",
+        return c.final_b("INVESTIGATE", L(lang, "quarters = []: no disclosed quarterly statements", "quarters = []: açıklanmış çeyreklik tablo yok"), [L(lang, f"No disclosed quarterly statements for {t} are available in the fundamentals data for {a} to {b}.",
                                          f"{a} – {b} için {t} şirketinin açıklanmış çeyreklik tablosu temel veri dosyasında bulunmuyor.")],
                        L(lang, "Fundamental data is not loaded, so margin changes and post-disclosure reactions cannot be analysed. " + warn_text(lang, m["warnings"] + ch["warnings"]),
                          "Temel veri yüklü olmadığı için marj değişimleri ve açıklama sonrası tepkiler analiz edilemiyor. " + warn_text(lang, m["warnings"] + ch["warnings"])))
@@ -548,6 +572,11 @@ def s5(lang, split, tickers):
     wk = m.get(f"{t}_vs_USDTRY_weekly"); mo = m.get(f"{t}_vs_USDTRY_monthly")
     fx = m["series"]["USDTRY"]; pr = m["tcmb_policy_rate"]
     state = "INVESTIGATE" if wk and wk["correlation"] <= 0 else "WATCH"
+    basis = (L(lang, f"weekly correlation with USD/TRY = {F(wk['correlation'])} (not positive): the claimed link is not supported; no advice can be given",
+               f"USD/TRY ile haftalık korelasyon = {F(wk['correlation'])} (pozitif değil): iddia edilen ilişki desteklenmiyor; tavsiye verilemez")
+             if state == "INVESTIGATE" else
+             L(lang, f"weekly correlation with USD/TRY = {F(wk['correlation'])} (positive but not predictive); no advice can be given",
+               f"USD/TRY ile haftalık korelasyon = {F(wk['correlation'])} (pozitif ama öngörücü değil); tavsiye verilemez"))
     ev = [L(lang, f"USD/TRY moved from {F(fx['first'])} to {F(fx['last'])} ({F(fx['change_pct'])}%) between {m['period'][0]} and {m['period'][1]}.",
             f"USD/TRY {m['period'][0]} – {m['period'][1]} arasında {F(fx['first'])} seviyesinden {F(fx['last'])} seviyesine geldi (%{F(fx['change_pct'])})."),
           L(lang, f"Weekly {t} vs USD/TRY: correlation {F(wk['correlation'])} over {F(wk['observations'])} weeks, same direction in {F(wk['same_direction_pct'])}% of weeks; mean {t} weekly return {F(wk['mean_stock_return_when_usdtry_up_pct'])}% when USD/TRY rose vs {F(wk['mean_stock_return_when_usdtry_down_pct'])}% when it fell.",
@@ -562,7 +591,7 @@ def s5(lang, split, tickers):
                       "Al/sat önerisi, hedef fiyat veya tahmin veremem; bu sistem yalnızca tarihsel analitik durum sunar."), claim,
                     L(lang, "Correlation is not causation and does not forecast tomorrow's price.", "Korelasyon nedensellik değildir ve yarının fiyatını öngörmez."),
                     warn_text(lang, m["warnings"])])
-    return c.final(state, ev, lim)
+    return c.final(state, ev, lim, basis)
 
 
 # =============================================================== Edge cases
@@ -577,7 +606,8 @@ def edge_future(lang, split, tickers):
     fd = rng.choice(["2026-10-15", "2026-11-20", "2026-12-31", "2027-03-01", "2026-09-30"])
     q = rng.choice(EDGE_FUTURE[lang]).format(t=t, sec=(SEC_EN if lang == "en" else SEC_TR)[sec], fd=show_date(fd, lang))
     c = Conv(lang, q)
-    return c.final("ANALYSIS_UNSAFE",
+    return c.final_b("ANALYSIS_UNSAFE", L(lang, "the request needs data after the analysis date 2026-09-10: look-ahead, no tool is called",
+                                              "istek analiz tarihi 2026-09-10 sonrasına ait veri gerektiriyor: look-ahead, tool çağrılmaz"),
                    [L(lang, "The request needs information after the analysis date 2026-09-10, which is not available to this system.",
                       "İstek, analiz tarihi 2026-09-10 sonrasına ait bilgi gerektiriyor; bu bilgi sistemde yok.")],
                    L(lang, "Using data after 2026-09-10 would be look-ahead bias, and forecasting prices is outside the allowed scope. A historical analysis up to 2026-09-10 can be run instead.",
@@ -589,7 +619,7 @@ def edge_unknown(lang, split, tickers):
     q = L(lang, f"How many times did {bad} touch the lower Bollinger Band in 2025?", f"{bad} 2025'te alt Bollinger bandına kaç kez değdi?")
     c = Conv(lang, q)
     r = c.call("detect_reversal_events", {"ticker": bad, "event": "lower_bollinger_touch", "start": "2025-01-01", "end": "2025-12-31"})
-    return c.final("ANALYSIS_UNSAFE", [L(lang, f"The tool returned {r.get('error')}: {r.get('message')}.", f"Araç {r.get('error')} döndürdü: {r.get('message')}.")],
+    return c.final_b("ANALYSIS_UNSAFE", f"error = {r.get('error')}", [L(lang, f"The tool returned {r.get('error')}: {r.get('message')}.", f"Araç {r.get('error')} döndürdü: {r.get('message')}.")],
                    L(lang, "No price data exists for this ticker in the study universe, so no statistics can be reported.",
                      "Bu hisse için çalışma evreninde fiyat verisi yok, bu nedenle istatistik raporlanamaz."))
 
@@ -609,7 +639,7 @@ def edge_history(lang, split, tickers):
             f"{t} {r['period'][0]} – {r['period'][1]} döneminin ilk günü {F(r['first_close'])}, son günü {F(r['last_close'])} kapanış yaptı: toplam getiri %{F(r['total_return_pct'])}."),
           L(lang, f"Highest close {F(r['max_close'])} ({r['max_close_date']}), lowest close {F(r['min_close'])} ({r['min_close_date']}); maximum drawdown {F(r['max_drawdown_pct'])}%, annualised volatility {F(r['annualised_volatility_pct'])}%.",
             f"En yüksek kapanış {F(r['max_close'])} ({r['max_close_date']}), en düşük {F(r['min_close'])} ({r['min_close_date']}); maksimum düşüş %{F(r['max_drawdown_pct'])}, yıllık oynaklık %{F(r['annualised_volatility_pct'])}.")]
-    return c.final("WATCH", ev, L(lang, "Descriptive statistics only; prices are adjusted for splits and dividends.", "Yalnızca betimsel istatistiktir; fiyatlar bölünme ve temettüye göre düzeltilmiştir."))
+    return c.final("WATCH", ev, basis=L(lang, "descriptive price history only, no signal is tested", "yalnızca betimsel fiyat geçmişi, sinyal test edilmiyor"), limitations=L(lang, "Descriptive statistics only; prices are adjusted for splits and dividends.", "Yalnızca betimsel istatistiktir; fiyatlar bölünme ve temettüye göre düzeltilmiştir."))
 
 
 
@@ -631,7 +661,7 @@ def s6_sr(lang, split, tickers):
         return None
     sup, res = r["nearest_supports"], r["nearest_resistances"]
     if not sup and not res:
-        return c.final("INVESTIGATE", [L(lang, f"No level with at least two pivot touches was found for {t} in {r['period'][0]} to {r['period'][1]}.",
+        return c.final_b("INVESTIGATE", L(lang, "nearest_supports = [] and nearest_resistances = []: no level to judge", "nearest_supports = [] ve nearest_resistances = []: değerlendirilecek seviye yok"), [L(lang, f"No level with at least two pivot touches was found for {t} in {r['period'][0]} to {r['period'][1]}.",
                                          f"{r['period'][0]} – {r['period'][1]} döneminde {t} için en az iki pivot temaslı seviye bulunamadı.")],
                        warn_text(lang, r["warnings"]))
     def lv(x):
@@ -711,14 +741,15 @@ def s8_events(lang, split, tickers):
     if "error" in r:
         return None
     if not r["events"]:
-        return c.final("INVESTIGATE", [L(lang, f"No official events for {t} were found between {r['period'][0]} and {r['period'][1]}.", f"{r['period'][0]} – {r['period'][1]} arasında {t} için resmi olay bulunamadı.")],
+        return c.final_b("INVESTIGATE", "events = []", [L(lang, f"No official events for {t} were found between {r['period'][0]} and {r['period'][1]}.", f"{r['period'][0]} – {r['period'][1]} arasında {t} için resmi olay bulunamadı.")],
                        warn_text(lang, r["warnings"]))
     cnt = ", ".join(f"{k} {F(v)}" for k, v in r["counts_by_type"].items())
     ev = [L(lang, f"{F(r['total_events'])} events between {r['period'][0]} and {r['period'][1]}: {cnt}.", f"{r['period'][0]} – {r['period'][1]} arasında {F(r['total_events'])} olay: {cnt}.")]
     ev += [f"{e['date']}: {e['headline']}" + (f" ({e['source']})." if e.get("source") else ".") for e in r["events"][-4:]]
     lim = " ".join(x for x in [L(lang, "Events are contextual evidence with timestamps; they do not by themselves explain or predict price moves.",
                                  "Olaylar zaman damgalı bağlamsal kanıttır; tek başlarına fiyat hareketini açıklamaz veya öngörmez."), warn_text(lang, r["warnings"])] if x)
-    return c.final("WATCH", ev, lim)
+    return c.final("WATCH", ev, lim, L(lang, f"total_events = {F(r['total_events'])}: official events are context only, not a signal",
+                                       f"total_events = {F(r['total_events'])}: resmi olaylar yalnızca bağlamdır, sinyal değildir"))
 
 
 def s9_speech(lang, split, tickers):
@@ -729,7 +760,7 @@ def s9_speech(lang, split, tickers):
                       f"Onaylanmış videolardan {topic} üzerine uzman yorumlarını özetle."]))
     c = Conv(lang, q)
     r = c.call("get_speech_features", {"topic": topic})
-    return c.final("INVESTIGATE", [L(lang, "The speech-intelligence layer returned no transcript segments for this topic.", "Konuşma analizi katmanı bu konu için transkript bölümü döndürmedi.")],
+    return c.final_b("INVESTIGATE", L(lang, "no transcript segments returned", "transkript bölümü dönmedi"), [L(lang, "The speech-intelligence layer returned no transcript segments for this topic.", "Konuşma analizi katmanı bu konu için transkript bölümü döndürmedi.")],
                    L(lang, "No pre-approved video transcripts are loaded, so expert commentary cannot be summarised; commentary would be contextual evidence, not ground truth. ",
                      "Onaylanmış video transkriptleri yüklü değil, bu yüzden uzman yorumu özetlenemiyor; yorumlar zaten doğrulanmış gerçek değil, bağlamsal kanıttır. ") + warn_text(lang, r["warnings"]))
 
@@ -743,7 +774,7 @@ def s10_index(lang, split, tickers):
             f"XU100 {r['period'][0]} – {r['period'][1]} arasında {F(r['first_close'])} seviyesinden {F(r['last_close'])} seviyesine geldi: %{F(r['total_return_pct'])}."),
           L(lang, f"High {F(r['max_close'])} ({r['max_close_date']}), low {F(r['min_close'])} ({r['min_close_date']}), max drawdown {F(r['max_drawdown_pct'])}%, annualised volatility {F(r['annualised_volatility_pct'])}%.",
             f"Zirve {F(r['max_close'])} ({r['max_close_date']}), dip {F(r['min_close'])} ({r['min_close_date']}), maksimum düşüş %{F(r['max_drawdown_pct'])}, yıllık oynaklık %{F(r['annualised_volatility_pct'])}.")]
-    return c.final("WATCH", ev, L(lang, "Descriptive index statistics in nominal TL.", "Nominal TL bazında betimsel endeks istatistikleri."))
+    return c.final("WATCH", ev, basis=L(lang, "descriptive index history only, no signal is tested", "yalnızca betimsel endeks geçmişi, sinyal test edilmiyor"), limitations=L(lang, "Descriptive index statistics in nominal TL.", "Nominal TL bazında betimsel endeks istatistikleri."))
 
 
 # =============================================================== main

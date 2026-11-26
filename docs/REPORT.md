@@ -53,18 +53,19 @@ computes numbers itself, never gives investment advice, and uses no data publish
 ## 5. Fine-tuning data
 | Split | Conversations | Notes |
 |---|---|---|
-| train | 1,440 | |
+| train | 1,560 | |
 | validation | 109 | |
 | test | 143 | held-out tickers (PGSUS, TOASO, KRDMD, TTKOM, ENJSA, CIMSA, ULKER, TAVHL) and unseen question templates |
 
 - Each record: system prompt → question → tool call(s) → **real tool output** → answer
-  (`ANALYTICAL_STATE / EVIDENCE / LIMITATIONS / NOTE`).
+  (`DECISION_BASIS / ANALYTICAL_STATE / EVIDENCE / LIMITATIONS / NOTE`). `DECISION_BASIS` names the tool-output fields
+  that decide the state, so the state is generated after them.
 - Scenario mix: sector catch-up, weekday and multi-day patterns, technical reversals, quarterly fundamentals,
   rule/safety questions, support/resistance, strategy variants, event calendar, speech layer, index history, and edge
   cases (future dates, unknown tickers).
 - Bilingual (Turkish/English); dates in both `YYYY-MM-DD` and `DD.MM.YYYY`.
 - Answers are rule-based templates filled **only with numbers copied from the tool output**; states follow
-  `training/labeling_rules.md`. The validator (`harness/validate.py`) reports **0 violations** over all 1,692 conversations.
+  `training/labeling_rules.md`. The validator (`harness/validate.py`) reports **0 violations** over all 1,812 conversations.
 - Class balancing keeps rare states (catch-up, reversal and fundamental candidates) represented.
 - Synthetic fundamentals are used only for training rows about companies without KAP data; evaluation reports real
   and synthetic fundamentals separately.
@@ -76,7 +77,7 @@ computes numbers itself, never gives investment advice, and uses no data publish
 | LoRA | r = 16, alpha = 32, dropout 0.05, all attention and MLP projections |
 | Optimiser / LR | paged AdamW 8-bit, 2e-4, cosine, 5% warm-up |
 | Batch | 1 × gradient accumulation 16 |
-| Max length | 6,144 tokens (no training example exceeds it) |
+| Max length | 6,656 tokens (no training example exceeds it) |
 | Loss | assistant tokens only (tool calls + final answers) |
 | Memory | Liger fused linear cross-entropy (the 152k-vocabulary logits are never materialised) |
 | Epochs / time / hardware | **[TBD: Kaggle run]** (1 epoch on 2× T4) |

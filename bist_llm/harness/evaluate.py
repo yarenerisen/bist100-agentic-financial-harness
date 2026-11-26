@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from harness.run_agent import run, ReplayBackend, make_backend   # noqa: E402
 from harness.validate import numbers_not_in_evidence, check_answer          # noqa: E402
+from tools.registry import normalize_pattern                             # noqa: E402
 
 import pandas as pd
 REAL_FUND = set(pd.read_csv(ROOT / "data" / "fundamentals.csv").dropna(subset=["revenue"]).ticker)
@@ -32,6 +33,13 @@ def fundamentals_source(refs):
 KEY_ARGS = ("ticker", "event", "pattern", "pattern_type", "strategy", "start", "end", "as_of", "horizon")
 
 
+def _same(k, a, b):
+    """Argument match; a weekday pattern counts as equal in the short (DDDUU) and the day-by-day form."""
+    if k == "pattern":
+        return normalize_pattern(a) == normalize_pattern(b)
+    return str(a) == str(b)
+
+
 def ref_calls(row):
     return [json.loads(m["content"]) for m in row["messages"][2:-1] if m["role"] == "assistant"]
 
@@ -44,7 +52,7 @@ def eval_row(row, backend_factory, repeats=1, mode="E"):
     t = traces[0]
     calls = [c for c in t["tool_calls"] if "tool" in c]
     tool_ok = [c["tool"] for c in calls] == [r["tool"] for r in refs]
-    args_ok = tool_ok and all(all(str(c["arguments"].get(k)) == str(r["arguments"].get(k)) for k in KEY_ARGS if k in r["arguments"])
+    args_ok = tool_ok and all(all(_same(k, c["arguments"].get(k), r["arguments"].get(k)) for k in KEY_ARGS if k in r["arguments"])
                               for c, r in zip(calls, refs))
     lookahead = any(str(v) > "2026-09-10" for c in calls for k, v in c["arguments"].items() if k in ("start", "end", "as_of"))
     evid = [json.dumps(c["result"], ensure_ascii=False, separators=(",", ":")) for c in calls] + [q] + ([raw] if raw else [])
@@ -75,7 +83,7 @@ def per_tool(res):
             d["expected"] += 1
             got = [c for c in r["calls"] if c["tool"] == ref["tool"]]
             d["called"] += bool(got)
-            d["args_correct"] += any(all(str(c["arguments"].get(k)) == str(ref["arguments"].get(k)) for k in KEY_ARGS if k in ref["arguments"])
+            d["args_correct"] += any(all(_same(k, c["arguments"].get(k), ref["arguments"].get(k)) for k in KEY_ARGS if k in ref["arguments"])
                                      for c in got)
         for c in r["calls"]:
             if c["tool"] not in {x["tool"] for x in r["ref_calls"]}:

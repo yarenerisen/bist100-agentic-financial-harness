@@ -25,6 +25,8 @@ STEPS="setup" bash training/train_local.sh
 if ! .venv/bin/python -c "import fla" 2>/dev/null; then
   log "fast kernels for Qwen3.5's linear-attention layers (flash-linear-attention, causal-conv1d)"
   .venv/bin/pip install -q flash-linear-attention ninja packaging || log "WARNING: flash-linear-attention not installed (slow fallback)"
+  # build for this GPU only (all architectures took ~10 min)
+  TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST:-$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | head -1)}" \
   PATH="/usr/local/cuda/bin:$PATH" CUDA_HOME=/usr/local/cuda .venv/bin/pip install -q --no-build-isolation causal-conv1d \
     > runs/causal_conv1d.log 2>&1 || log "WARNING: causal-conv1d not installed (slow fallback), see runs/causal_conv1d.log"
 fi
@@ -33,7 +35,7 @@ STEPS="smoke" bash training/train_local.sh
 
 serve() {   # serve <model path or id> <served name>: start vLLM and wait until it answers
   log "vLLM server: $2"
-  .venv-vllm/bin/vllm serve "$1" --served-model-name "$2" --max-model-len 8192 --gpu-memory-utilization 0.90 \
+  .venv-vllm/bin/vllm serve "$1" --served-model-name "$2" --max-model-len 12288 --gpu-memory-utilization 0.90 \
     --generation-config vllm --seed 0 --port 8000 > "runs/vllm_$2.log" 2>&1 &
   VPID=$!
   until curl -sf localhost:8000/v1/models > /dev/null; do
@@ -69,6 +71,12 @@ for who in base finetuned; do
   stop
 done
 .venv/bin/python -m harness.compare results/eval_base_E.json results/eval_finetuned_E.json > results/compare_base_vs_finetuned.md
+# optional: an earlier adapter on the same test rows (PREV_ADAPTER=runs/prev-lora), e.g. v1 vs this run
+if [ -n "${PREV_ADAPTER:-}" ]; then
+  merge "$PREV_ADAPTER" runs/prev-merged; serve runs/prev-merged previous
+  EV previous_E --model previous --workers "$WORKERS"; stop
+  .venv/bin/python -m harness.compare results/eval_base_E.json results/eval_previous_E.json results/eval_finetuned_E.json > results/compare_base_previous_finetuned.md
+fi
 
 # execution traces with the HF backend (records the adapter SHA-256) and the manifest, as in train_local.sh
 STEPS="traces manifest" bash training/train_local.sh
@@ -77,7 +85,8 @@ GG="runs/bist-analyst-qwen35-4b-Q4_K_M.gguf"
 if [ ! -f "$GG" ]; then
   log "GGUF export (Q4_K_M); optional, the submission needs only the adapter"
   ( [ -d llama.cpp ] || git clone -q --depth 1 https://github.com/ggml-org/llama.cpp
-    [ -x .venv-gguf/bin/python ] || { python3 -m venv .venv-gguf && .venv-gguf/bin/pip install -q -r llama.cpp/requirements/requirements-convert_hf_to_gguf.txt cmake; }
+    [ -x .venv-gguf/bin/python ] || { python3 -m venv .venv-gguf && .venv-gguf/bin/pip install -q -r llama.cpp/requirements/requirements-convert_hf_to_gguf.txt cmake \
+                                                                        && .venv-gguf/bin/pip install -q "transformers>=5.2"; }   # Qwen3_5Tokenizer
     .venv-gguf/bin/python llama.cpp/convert_hf_to_gguf.py runs/merged --outfile runs/bist-bf16.gguf --outtype bf16
     .venv-gguf/bin/cmake -S llama.cpp -B llama.cpp/build -DGGML_CUDA=OFF -DLLAMA_CURL=OFF > /dev/null
     .venv-gguf/bin/cmake --build llama.cpp/build --target llama-quantize -j > /dev/null

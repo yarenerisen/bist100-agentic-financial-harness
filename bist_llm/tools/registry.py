@@ -9,6 +9,20 @@ DATE = {"type": "string", "description": "YYYY-MM-DD, must be <= 2026-09-10"}
 TICKER = {"type": "string", "description": "BIST ticker without .IS, e.g. THYAO"}
 SECTOR = {"type": ["string", "array"], "description": "sector name (" + ", ".join(core.SECTORS) + ") or list of tickers"}
 TICKERS = {"type": ["string", "array"], "description": "one ticker, list of tickers, or a sector name"}
+DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri")
+
+
+def pattern_by_day(letters):
+    """'DDDUU' -> 'Mon=D,Tue=D,Wed=D,Thu=U,Fri=U' (the day-by-day form the model writes)."""
+    return ",".join(f"{d}={c}" for d, c in zip(DAYS, letters.upper()))
+
+
+def normalize_pattern(p):
+    """Accepts 'DDDUU' or the day-by-day form 'Mon=D,Tue=D,Wed=D,Thu=U,Fri=U'; returns the 5 letters (or p unchanged)."""
+    if not isinstance(p, str):
+        return p
+    m = re.fullmatch(r"\s*" + r"\s*[,;]\s*".join(fr"{d}\s*[=:]\s*([UDXudx])" for d in DAYS) + r"\s*", p)
+    return "".join(m.groups()).upper() if m else p.strip().upper()
 
 
 def _ind_summary(ticker, start="2024-01-01", end="2026-09-10"):
@@ -78,7 +92,7 @@ TOOLS = {
                                  "horizons": {"type": "array", "items": {"type": "integer"}, "default": [5, 10, 20]},
                                  "require_strong_sector": {"type": "boolean", "default": False},
                                  "hold_days": {"type": "integer"}, "cost_pct": {"type": "number", "default": 0.2}}, ["strategy"]),
-    "test_weekday_pattern": (core.test_weekday_pattern, {"ticker": TICKER, "pattern": {"type": "string", "description": "5 letters Mon..Fri: U=up, D=down, X=any. e.g. DDDUU"},
+    "test_weekday_pattern": (core.test_weekday_pattern, {"ticker": TICKER, "pattern": {"type": "string", "description": "one letter per day Mon..Fri: U=up, D=down, X=any, written day by day, e.g. Mon=D,Tue=D,Wed=D,Thu=U,Fri=U (the short form DDDUU is also accepted)"},
                                                          "start": DATE, "end": DATE, "cost_pct": {"type": "number", "default": 0.2}}, ["ticker", "pattern", "start", "end"]),
     "detect_multiday_patterns": (core.detect_multiday_patterns, {"ticker": TICKER, "pattern_type": {"type": "string", "enum": ["consecutive_down", "consecutive_up", "large_down_day", "large_up_day"]},
                                                                  "n_days": {"type": "integer", "default": 3}, "threshold_pct": {"type": "number", "default": -3.0},
@@ -188,6 +202,8 @@ def _call_tool(name, args=None):
             if t not in core.available_tickers():
                 return _err(name, f"no data for ticker {t}", "UNKNOWN_ENTITY")
             args[k] = t
+    if name == "test_weekday_pattern" and "pattern" in args:
+        args["pattern"] = normalize_pattern(args["pattern"])
     if "event" in props and "event" in args and args["event"] not in events.EVENTS:
         return _err(name, f"unknown event; allowed: {sorted(events.EVENTS)}")
     if name == "run_backtest" and args.get("strategy") not in STRATEGIES:
