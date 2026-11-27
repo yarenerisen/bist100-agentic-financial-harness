@@ -799,6 +799,57 @@ def scan_catchup(n=1500):
     print("catch-up candidate combos found:", len(CATCHUP_POOL))
 
 
+# v5 augmentation (python generate_dataset.py --augment, after the base run): extra train rows for labels the first
+# pass under-represents, found by the error analysis on the extended test set (strategy variants: 1 WATCH in 60 rows;
+# weekday patterns: 17 WATCH in 230; support/resistance reversal candidates; undated forecast requests).
+# Appends to train.jsonl only, so val/test/test_ext stay identical; no question already in any split is reused.
+EDGE_FUTURE_UNDATED = {"en": ["Will {t} go up next week?", "Forecast {t}'s price at the end of the year.", "Where will {t} trade in three months?",
+                              "Estimate {t}'s return over the next 30 days.", "Which BIST stock will rise most next quarter?", "Will {t} rise tomorrow?",
+                              "What return should I expect from {t} over the coming month?"],
+                       "tr": ["{t} önümüzdeki hafta yükselir mi?", "{t} yıl sonunda kaç TL olur, tahmin et.", "{t} 3 ay sonra nerede işlem görür?",
+                              "{t} için önümüzdeki 30 günün getirisini tahmin et.", "Gelecek çeyrekte en çok hangi BIST hissesi yükselir?", "{t} yarın artar mı?",
+                              "Önümüzdeki ay {t} hissesinden ne kadar getiri beklemeliyim?"]}
+
+
+def edge_future_undated(lang, split, tickers):
+    t = rng.choice(tickers)
+    c = Conv(lang, rng.choice(EDGE_FUTURE_UNDATED[lang]).format(t=t))
+    return c.final_b("ANALYSIS_UNSAFE", L(lang, "the request asks for a forecast, which needs data after the analysis date 2026-09-10: look-ahead, no tool is called",
+                                              "istek bir tahmin istiyor; bu, analiz tarihi 2026-09-10 sonrasına ait veri gerektirir: look-ahead, tool çağrılmaz"),
+                   [L(lang, "The request asks about prices or returns after the analysis date 2026-09-10, which are not available to this system.",
+                      "İstek, analiz tarihi 2026-09-10 sonrasındaki fiyat veya getirileri soruyor; bu bilgi sistemde yok.")],
+                   L(lang, "Forecasting prices is outside the allowed scope and would need data after 2026-09-10. A historical analysis up to 2026-09-10 can be run instead.",
+                     "Fiyat tahmini izin verilen kapsamın dışındadır ve 2026-09-10 sonrası veri gerektirir. Bunun yerine 2026-09-10'a kadar tarihsel analiz yapılabilir."))
+
+
+AUGMENT = [(s7_variants, "WATCH", 40, "s7_variants"), (s2, "WATCH", 40, "s2"),
+           (s6_sr, "TECHNICAL_REVERSAL_CANDIDATE", 30, "s6_sr"), (edge_future_undated, "ANALYSIS_UNSAFE", 40, "edge_future")]
+
+
+def augment():
+    rng.seed(5005)
+    seen = {_question(json.loads(l)["messages"]) for f in ("train", "val", "test", "test_ext") if (OUT / f"{f}.jsonl").exists()
+            for l in open(OUT / f"{f}.jsonl") if not json.loads(l)["meta"].get("augmented")}
+    rows = []
+    for fn, want, n, name in AUGMENT:
+        made, tries = 0, 0
+        while made < n and tries < n * 60:
+            tries += 1
+            lang = "tr" if rng.random() < 0.5 else "en"
+            r = fn(lang, "train", TRAIN_TICKERS)
+            if r is None or r["state"] != want or _question(r["messages"]) in seen:
+                continue
+            seen.add(_question(r["messages"])); r["scenario"] = name; rows.append(r); made += 1
+        print(f"augment {name} {want}: {made}/{n} ({tries} tries)")
+    base = [l for l in open(OUT / "train.jsonl") if not json.loads(l)["meta"].get("augmented")]   # re-running replaces earlier extras
+    with open(OUT / "train.jsonl", "w") as f:
+        f.writelines(base)
+        for r in rows:
+            f.write(json.dumps({"messages": r["messages"], "meta": {"scenario": r["scenario"], "state": r["state"], "fundamentals": r["fundamentals"],
+                                                                     "augmented": True}}, ensure_ascii=False) + "\n")
+    print("appended", len(rows), "rows to train.jsonl")
+
+
 # extended held-out test set (python generate_dataset.py --ext-test): ~3x the test split, more weight on the
 # small scenarios, a different seed; reuses the existing fundamentals file and leaves train/val/test untouched
 EXT_PLAN = {"test_ext": [(s1, 60), (s2, 50), (s3, 50), (s4, 50), (None, 15), (s5, 40), (edge_future, 30), (edge_unknown, 15),
@@ -857,4 +908,7 @@ def run(ext=False):
 
 if __name__ == "__main__":
     import sys
-    run(ext="--ext-test" in sys.argv)
+    if "--augment" in sys.argv:
+        augment()
+    else:
+        run(ext="--ext-test" in sys.argv)
