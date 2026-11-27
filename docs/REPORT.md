@@ -128,6 +128,11 @@ technical reversals 24% → 0% → 0%, fundamentals 70% → 10% → 10%, rule/sa
 40% → 60% → 0%, strategy variants 40% → 100% → 80% (5 rows), support/resistance 25% → 25% → 50% (8 rows). On this
 set v4 and v5 are within one or two rows of each other; the larger extended set (8.5) separates them.
 
+Overlap: 10 of the 143 test questions also occur verbatim in the training data (5 unknown-ticker, 3 index-history and
+2 speech-layer questions, which have only a few templates). Without them (133 rows): v4 unsupported conclusions 12.8%,
+tool sequence 93.2%, hallucination 1.5%; v5 14.3%, 94.7%, 1.5%. The extended test set (8.5) shares no question with the
+training data.
+
 ### 8.2 Raw base model without tools or data (5 reference scenario questions)
 _Measured with the earlier base model Qwen3-8B (`training/baseline/`); the Qwen3.5-4B raw-LLM numbers are ablation level A in 8.3._
 | Metric | Value |
