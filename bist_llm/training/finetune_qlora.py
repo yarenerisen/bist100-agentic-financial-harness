@@ -2,21 +2,19 @@
 
 Kaggle/Colab setup (one cell):
     !pip install -q -U "transformers>=4.45" "peft>=0.13" "bitsandbytes>=0.44" accelerate datasets
-Run:
-    !python training/finetune_qlora.py --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora
-Fast iteration / smaller GPU:
-    --model Qwen/Qwen2.5-3B-Instruct
-Then merge for GGUF export:
-    !python training/finetune_qlora.py --merge --model Qwen/Qwen2.5-7B-Instruct --out /kaggle/working/bist-lora
+Run (project base model: Qwen/Qwen3.5-4B; Qwen3-8B also works):
+    !python training/finetune_qlora.py --model Qwen/Qwen3.5-4B --out /kaggle/working/qwen35-4b-lora --epochs 1 --liger
+Then merge for vLLM / GGUF export:
+    !python training/finetune_qlora.py --merge --model Qwen/Qwen3.5-4B --out /kaggle/working/qwen35-4b-lora --merged-out /tmp/merged
 """
-import argparse, json, math, os, random, time
+import argparse, inspect, json, math, os, random, time
 from pathlib import Path
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--model", default="Qwen/Qwen2.5-7B-Instruct")
+ap.add_argument("--model", default="Qwen/Qwen3.5-4B")
 ap.add_argument("--data", default=str(Path(__file__).resolve().parent))
 ap.add_argument("--out", default="bist-lora")
-ap.add_argument("--max-len", type=int, default=6144)
+ap.add_argument("--max-len", type=int, default=6656)
 ap.add_argument("--epochs", type=float, default=2)
 ap.add_argument("--lr", type=float, default=2e-4)
 ap.add_argument("--rank", type=int, default=16)
@@ -30,8 +28,12 @@ ap.add_argument("--save-steps", type=int, default=20, help="checkpoint every N o
 ap.add_argument("--liger", action="store_true", help="fused linear+cross-entropy (pip install liger-kernel): avoids materialising "
                 "the 152k-vocab logits, needed for long sequences on 8 GB GPUs")
 a = ap.parse_args()
+# attention + MLP projections; in_proj_qkv / in_proj_z / out_proj are Qwen3.5's linear-attention (Gated DeltaNet) layers,
+# absent in other models (PEFT only needs one name to match)
+LORA_TARGETS = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj", "in_proj_qkv", "in_proj_z", "out_proj"]
 
 import torch
+# QLoRA + Liger need every tensor on one device: on multi-GPU machines (Kaggle T4 x2) train on GPU 0 only
 from transformers import (AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, Trainer, TrainingArguments,
                           DataCollatorForSeq2Seq)
 
@@ -40,7 +42,7 @@ tok.pad_token = tok.pad_token or tok.eos_token
 
 if a.merge:
     from peft import PeftModel
-    base = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=torch.float16, device_map="cpu")
+    base = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=torch.bfloat16, device_map="cpu")   # bf16: Qwen3.5 overflows less than fp16
     m = PeftModel.from_pretrained(base, a.out).merge_and_unload()
     dst = a.merged_out or a.out + "-merged"
     m.save_pretrained(dst, safe_serialization=True); tok.save_pretrained(dst)
@@ -99,17 +101,30 @@ if a.liger:
     from transformers import AutoConfig
     mt = AutoConfig.from_pretrained(a.model).model_type
     import liger_kernel.transformers as lk
-    getattr(lk, f"apply_liger_kernel_to_{mt}")(rope=True, rms_norm=True, swiglu=True, fused_linear_cross_entropy=True, cross_entropy=False)
+    fn = getattr(lk, f"apply_liger_kernel_to_{mt}")
+    want = dict(rope=True, rms_norm=True, swiglu=True, fused_linear_cross_entropy=True, cross_entropy=False)
+    kw = {k: v for k, v in want.items() if k in inspect.signature(fn).parameters}   # patch functions differ per model
+    try:
+        fn(**kw)
+    except NotImplementedError:      # e.g. Qwen3.5 has no Liger RoPE kernel; keep the other kernels
+        fn(**{**kw, "rope": False})
     print(f"liger kernels applied ({mt})")
 bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
 model = AutoModelForCausalLM.from_pretrained(
-    a.model, device_map="auto", torch_dtype=torch.bfloat16 if bf16 else torch.float16,
+    a.model, device_map={"": 0} if torch.cuda.is_available() else None, torch_dtype=torch.bfloat16 if bf16 else torch.float16,
     quantization_config=BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True,
                                            bnb_4bit_compute_dtype=torch.bfloat16 if bf16 else torch.float16))
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
+# prepare_model_for_kbit_training upcasts every non-quantized weight to fp32; for Qwen3.5 that includes the frozen,
+# tied 248k x 2560 embedding / lm_head (1.3 GB -> 2.5 GB, plus a bf16 copy per loss chunk), which does not fit on 8 GB.
+# It is not trained, so keep it in the compute dtype (layer norms stay fp32).
+_cdt = torch.bfloat16 if bf16 else torch.float16
+for _m in {model.get_input_embeddings(), model.get_output_embeddings()}:
+    if _m is not None:
+        _m.to(_cdt)
 model = get_peft_model(model, LoraConfig(r=a.rank, lora_alpha=a.alpha, lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
-                                         target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]))
+                                         target_modules=LORA_TARGETS))
 model.print_trainable_parameters()
 
 import inspect
@@ -143,8 +158,16 @@ import glob
 last = sorted(glob.glob(os.path.join(a.out, "checkpoint-*")), key=lambda p: int(p.rsplit("-", 1)[1]))
 trainer.train(resume_from_checkpoint=last[-1] if (a.resume and last) else None)
 trainer.save_model(a.out); tok.save_pretrained(a.out)
-hist = {"base_model": a.model, "train_examples": len(train), "val_examples": len(val), "epochs": a.epochs, "lr": a.lr,
-        "lora_rank": a.rank, "lora_alpha": a.alpha, "grad_accum": a.grad_accum, "max_len": a.max_len,
+hist = {"base_model": a.model, "chat_rendering": STYLE, "train_examples": len(train), "val_examples": len(val),
+        "hyperparameters": {"method": "QLoRA", "quantization": "4-bit NF4, double quantization", "compute_dtype": "bf16" if bf16 else "fp16", "frozen_embedding_dtype": "bf16" if bf16 else "fp16",
+                            "lora_rank": a.rank, "lora_alpha": a.alpha, "lora_dropout": 0.05,
+                            "target_modules": LORA_TARGETS,
+                            "epochs": a.epochs, "learning_rate": a.lr, "lr_scheduler": "cosine", "warmup": 0.05,
+                            "per_device_batch_size": 1, "gradient_accumulation_steps": a.grad_accum,
+                            "effective_batch_size": a.grad_accum, "max_sequence_length": a.max_len,
+                            "optimizer": "paged_adamw_8bit", "gradient_checkpointing": True, "liger_fused_cross_entropy": a.liger,
+                            "loss": "assistant tokens only (tool calls and final answers)", "seed": 42},
+        "epochs": a.epochs, "lr": a.lr, "lora_rank": a.rank, "lora_alpha": a.alpha, "grad_accum": a.grad_accum, "max_len": a.max_len,
         "minutes": round((time.time() - t0) / 60, 1), "log_history": trainer.state.log_history}
 Path(a.out, "training_report.json").write_text(json.dumps(hist, indent=1))
 print("saved adapter + training_report.json to", a.out)

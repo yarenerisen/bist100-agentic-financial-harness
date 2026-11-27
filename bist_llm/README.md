@@ -5,17 +5,19 @@
 ## Layout
 ```
 data/      prices.parquet (76 BIST stocks + XU100 + USDTRY/EURTRY, 2023-06 → 2026-09-10), policy_rate.csv, fed_rate.csv,
-           fundamentals.csv (KAP data, filled by hand), cpi.csv, download_prices.py, README_fill_data.md
+           fundamentals.csv (KAP data, filled by hand), cpi.csv (TÜİK), MACRO_SOURCES.md, download_prices.py, README_fill_data.md
 tools/     core.py (data, sector ranking, catch-up event study, weekday & multi-day patterns, indicators)
            events.py (11 technical event families + regime breakdown), backtest.py (Sharpe, MDD, B&H, XU100, costs)
            macro_fund.py (macro context, point-in-time fundamentals, post-disclosure abnormal returns)
            quality.py (data-quality gate), levels.py (support/resistance), context.py (official event calendar, speech features)
-           registry.py (16 MCP-style tools: validation, look-ahead block, compact output)
+           registry.py (16 tools: validation, look-ahead block, compact output); ../mcp_server.py serves them over MCP (stdio)
 training/  prompts.py (system prompt), generate_dataset.py → train/val/test.jsonl (1,440 / 109 / 143),
            labeling_rules.md, finetune_qlora.py, RUN_ON_KAGGLE.md
-harness/   run_agent.py (state machine, tool execution, quality gate, answer validation, human review, decision log, replay,
+harness/   run_agent.py (16-state workflow with agent roles, tool execution, quality and risk gates, answer validation,
+           human review, decision log, replay,
            ablation modes A–E), evidence.py (observed context vs committed evidence), memory.py (episodic memory, SQLite)
-           validate.py (numeric hallucination / format / action-space / advice checks), evaluate.py (evaluation metrics)
+           validate.py (numeric hallucination / format / action-space / advice checks), evaluate.py (evaluation metrics, per-tool
+           table), compare.py (side-by-side report), test_workflow.py (state-machine self-check)
 research/  run_scenarios.py → docs/results/*.md (scenario reports), plot_signals.py → docs/figures/*.png
 ```
 
@@ -49,7 +51,9 @@ Python: `pip install pandas pyarrow numpy yfinance` (tools) + `transformers peft
   inflation restatement); 2024Q4 row = full-year 2024; disclosure date = board-approval date in the report;
   net debt includes lease liabilities; CCOLA 2024Q4 income statement is unreadable (garbled font) and is omitted.
   AKBNK (bank) is excluded: EBITDA-based ratios are not meaningful for banks.
-- TÜİK CPI not loaded; TCMB/Fed rate files should be re-verified against official tables.
+- TÜİK CPI (2023-06 → 2026-08, by publication date) and the TCMB/FOMC rate files are verified against the official
+  bulletins and decision announcements; sources in `data/MACRO_SOURCES.md`. TÜİK switched CPI to 2025=100 from the
+  January 2026 bulletin (published annual rates are used as released).
 - News layer = official timestamped events only (KAP disclosures, TCMB/FOMC); no licensed news feed. Speech pipeline exists
   (`data/speech_pipeline.py`, local Whisper) but no pre-approved videos are loaded yet; strategy variant E is unavailable.
 - Event studies are in-sample; few events for combined conditions → low statistical power (always reported).

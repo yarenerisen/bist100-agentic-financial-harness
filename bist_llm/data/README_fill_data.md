@@ -7,6 +7,7 @@
   (thousand or million TL). To add a company, append rows in the same format.
 - `policy_rate.csv`: CBRT one-week repo rate decisions (`effective_date`, `policy_rate_pct`).
 - `fed_rate.csv`: FOMC federal funds target range decisions.
-- `cpi.csv`: TurkStat CPI, `publication_date` = release date (template, not loaded yet).
+- `cpi.csv`: TÜİK CPI, `publication_date` = bulletin release date; monthly and annual % as published (2023-06 → 2026-08).
+  Rate files list changes plus the last decision (hold) before the cutoff. Sources: `MACRO_SOURCES.md`.
 
 Fields left empty produce a "data not loaded" warning in the tools. Never enter made-up values.

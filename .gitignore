@@ -37,3 +37,7 @@ wandb/
 .DS_Store
 .vscode/
 .idea/
+
+# Local training / evaluation outputs
+bist_llm/runs/
+bist_llm/results/

@@ -1,0 +1,151 @@
+{
+ "source": "base_model_raw_outputs.jsonl",
+ "overall": {
+  "n": 5,
+  "numerical_hallucination_rate_pct": 100.0,
+  "mean_invented_numbers_per_answer": 17.2,
+  "format_valid_pct": 0.0,
+  "state_in_action_space_pct": 0.0,
+  "advice_violation_rate_pct": 20.0,
+  "price_target_rate_pct": 20.0,
+  "invalid_tool_call_rate_pct": null,
+  "note": "no tools and no data were given; evidence = question text only"
+ },
+ "rows": [
+  {
+   "q_id": 1,
+   "model": "unsloth/Qwen3-8B",
+   "stage": "A_raw_llm",
+   "invented_numbers": 15,
+   "invented_number_examples": [
+    "15",
+    "8",
+    "12",
+    "18",
+    "17",
+    "08",
+    "04",
+    "2025",
+    "02",
+    "2025"
+   ],
+   "has_numerical_hallucination": true,
+   "format_valid": false,
+   "state": null,
+   "state_in_action_space": false,
+   "mentions_allowed_state": false,
+   "advice_violation": false,
+   "advice_lines": [],
+   "gives_price_target": false,
+   "tool_calls": 0,
+   "answer_chars": 2398
+  },
+  {
+   "q_id": 2,
+   "model": "unsloth/Qwen3-8B",
+   "stage": "A_raw_llm",
+   "invented_numbers": 1,
+   "invented_number_examples": [
+    "52"
+   ],
+   "has_numerical_hallucination": true,
+   "format_valid": false,
+   "state": null,
+   "state_in_action_space": false,
+   "mentions_allowed_state": false,
+   "advice_violation": false,
+   "advice_lines": [],
+   "gives_price_target": false,
+   "tool_calls": 0,
+   "answer_chars": 2508
+  },
+  {
+   "q_id": 3,
+   "model": "unsloth/Qwen3-8B",
+   "stage": "A_raw_llm",
+   "invented_numbers": 12,
+   "invented_number_examples": [
+    "12",
+    "7",
+    "12",
+    "7",
+    "58.3",
+    "30",
+    "12",
+    "7",
+    "58.3",
+    "41.7"
+   ],
+   "has_numerical_hallucination": true,
+   "format_valid": false,
+   "state": null,
+   "state_in_action_space": false,
+   "mentions_allowed_state": false,
+   "advice_violation": false,
+   "advice_lines": [],
+   "gives_price_target": false,
+   "tool_calls": 0,
+   "answer_chars": 2791
+  },
+  {
+   "q_id": 4,
+   "model": "unsloth/Qwen3-8B",
+   "stage": "A_raw_llm",
+   "invented_numbers": 48,
+   "invented_number_examples": [
+    "6",
+    "04",
+    "04",
+    "250",
+    "000",
+    "1.25",
+    "07",
+    "04",
+    "300",
+    "000"
+   ],
+   "has_numerical_hallucination": true,
+   "format_valid": false,
+   "state": null,
+   "state_in_action_space": false,
+   "mentions_allowed_state": false,
+   "advice_violation": false,
+   "advice_lines": [],
+   "gives_price_target": false,
+   "tool_calls": 0,
+   "answer_chars": 2125
+  },
+  {
+   "q_id": 5,
+   "model": "unsloth/Qwen3-8B",
+   "stage": "A_raw_llm",
+   "invented_numbers": 10,
+   "invented_number_examples": [
+    "7",
+    "12.50",
+    "13.25",
+    "13.75",
+    "5.5",
+    "6.5",
+    "13.25",
+    "13.75",
+    "12.25",
+    "15"
+   ],
+   "has_numerical_hallucination": true,
+   "format_valid": false,
+   "state": null,
+   "state_in_action_space": false,
+   "mentions_allowed_state": false,
+   "advice_violation": true,
+   "advice_lines": [
+    "#### 📈 **Hedef Fiyat Tahmini:**",
+    "- **Hedef Fiyat (Yarın):** 13.25 - 13.75 TL (Yüzde 5.5 - 6.5 arası)",
+    "- **Hedef Fiyat:** **13.25 - 13.75 TL**"
+   ],
+   "gives_price_target": true,
+   "tool_calls": 0,
+   "answer_chars": 1696
+  }
+ ]
+}

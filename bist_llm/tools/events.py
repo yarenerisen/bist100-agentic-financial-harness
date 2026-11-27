@@ -102,7 +102,20 @@ def detect_reversal_events(ticker, event="lower_bollinger_touch", start="2024-01
         warnings.append(f"{zero_vol*100:.0f}% of days have zero volume in source data; volume-based conditions unreliable")
     if excluded_dates:
         warnings.append(f"{len(excluded_dates)} recent event(s) excluded because the forward window is incomplete as of {end.date()}: {excluded_dates}")
+    # decision inputs computed here (trading-day arithmetic is not left to the language model)
+    last_ev = ev.index[-1] if len(ev) else None
+    days_since = int((ind.index > last_ev).sum()) if last_ev is not None else None
+    a = groups["all_events"]
+    summary = {"last_event_date": str(last_ev.date()) if last_ev is not None else None,
+               "trading_days_since_last_event": days_since,
+               "event_in_last_10_trading_days": bool(days_since is not None and days_since <= 10),
+               "events_with_complete_window": a["events_with_complete_window"],
+               "at_least_10_complete_events": a["events_with_complete_window"] >= 10,
+               "success_rate_pct": a.get("success_rate_pct"),
+               "success_rate_at_least_60": bool((a.get("success_rate_pct") or 0) >= 60),
+               "success_rate_below_50": bool(a.get("success_rate_pct") is not None and a["success_rate_pct"] < 50)}
     return {"tool": "detect_reversal_events", "ticker": ticker.upper(), "event": event, "event_definition": desc,
+            "summary": summary,
             "expected_direction": "up" if direction > 0 else "down",
             "period": [str(pd.Timestamp(start).date()), str(end.date())],
             "success_definition": f"price moves in expected direction over {success_horizon} trading days (close to close)",
