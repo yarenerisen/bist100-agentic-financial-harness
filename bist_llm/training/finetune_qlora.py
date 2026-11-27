@@ -159,7 +159,7 @@ last = sorted(glob.glob(os.path.join(a.out, "checkpoint-*")), key=lambda p: int(
 trainer.train(resume_from_checkpoint=last[-1] if (a.resume and last) else None)
 trainer.save_model(a.out); tok.save_pretrained(a.out)
 hist = {"base_model": a.model, "chat_rendering": STYLE, "train_examples": len(train), "val_examples": len(val),
-        "hyperparameters": {"method": "QLoRA", "quantization": "4-bit NF4, double quantization", "compute_dtype": "bf16" if bf16 else "fp16",
+        "hyperparameters": {"method": "QLoRA", "quantization": "4-bit NF4, double quantization", "compute_dtype": "bf16" if bf16 else "fp16", "frozen_embedding_dtype": "bf16" if bf16 else "fp16",
                             "lora_rank": a.rank, "lora_alpha": a.alpha, "lora_dropout": 0.05,
                             "target_modules": LORA_TARGETS,
                             "epochs": a.epochs, "learning_rate": a.lr, "lr_scheduler": "cosine", "warmup": 0.05,
