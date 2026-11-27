@@ -7,9 +7,12 @@ matplotlib>=3.7
 mcp>=2.3,<3          # only for mcp_server.py
 # Fine-tuning and HF inference (NVIDIA GPU). Install PyTorch with CUDA first, e.g.
 #   pip install torch --index-url https://download.pytorch.org/whl/cu128
-transformers>=4.45
-peft>=0.13
-bitsandbytes>=0.44
-accelerate>=0.34
-liger-kernel>=0.5
-huggingface_hub>=0.24
+# Qwen3.5-4B needs transformers 5.x; the release was trained and evaluated with the versions in brackets
+transformers>=5.2            # [5.24.1]
+peft>=0.13                   # [0.22.0]
+bitsandbytes>=0.44           # [0.50.2]
+accelerate>=0.34             # [1.16.0]
+liger-kernel>=0.5            # [0.8.5]  training only
+flash-linear-attention>=0.4  # [0.6.0]  fast Gated DeltaNet kernels (optional; falls back to PyTorch)
+huggingface_hub>=0.24        # [2.4.0]
+# torch [2.11.0+cu128]

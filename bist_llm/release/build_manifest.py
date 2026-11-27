@@ -55,6 +55,7 @@ if __name__ == "__main__":
         "fine_tuning": {"train": entry(ROOT / "training/train.jsonl", examples=jsonl_count(ROOT / "training/train.jsonl")),
                         "validation": entry(ROOT / "training/val.jsonl", examples=jsonl_count(ROOT / "training/val.jsonl")),
                         "test": entry(ROOT / "training/test.jsonl", examples=jsonl_count(ROOT / "training/test.jsonl")),
+                        "extended_test": entry(ROOT / "training/test_ext.jsonl", examples=jsonl_count(ROOT / "training/test_ext.jsonl")),
                         "config_and_hyperparameters": entry(report) if report.exists() else None,
                         "hyperparameters": json.loads(report.read_text()).get("hyperparameters") if report.exists() else None,
                         "system_prompt": entry(ROOT / "training/prompts.py"), "labeling_rules": entry(ROOT / "training/labeling_rules.md"),
@@ -63,6 +64,8 @@ if __name__ == "__main__":
         "rag": {"knowledge_base": entry(ROOT / "release/knowledge_base.json"),
                 "retrieval": "deterministic tool-based retrieval over timestamped structured sources (no vector store)"},
         "execution_traces": (entry(Path(a.traces), scenarios=traces.get("n"), summary=traces.get("summary")) if traces else None),
+        "live_style_check": ({"questions": entry(ROOT / "release/live_check_questions.json"), "traces": entry(ROOT / "release/live_check_traces.json")}
+                             if (ROOT / "release/live_check_traces.json").exists() else None),
         "source_code": {"files": [entry(p) for p in code], "entry_points": {
             "ask_a_question": "python -m harness.run_agent --backend hf --model <adapter> --load-4bit \"<question>\"",
             "five_scenarios": "python -m release.make_traces --backend hf --model <adapter> --load-4bit",
