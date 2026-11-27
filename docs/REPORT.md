@@ -146,10 +146,39 @@ gates turn the remaining invalid answers into labelled fallbacks instead of wron
 | real KAP | 25 | 0.0% | 100% | 32.0% |
 | synthetic | 25 | 4.0% | 88.0% | 12.0% |
 
-### 8.5 Extended held-out test set — **[TBD: running]**
+### 8.5 Extended held-out test set (v4, level E, 390 rows)
 `training/test_ext.jsonl` (`python training/generate_dataset.py --ext-test`): 390 new conversations on the held-out
 tickers with a different seed, none of whose questions appears in train, validation or test; more rows for the small
 scenarios (30 strategy-variant and 30 future-date questions).
+
+| Metric | 143-row test | 390-row extended test |
+|---|---|---|
+| Numerical hallucination rate | 1.4% | 1.3% |
+| Invalid tool-call rate | 0.7% | 1.3% |
+| Correct tool sequence / arguments | 93.7% / 88.8% | 89.5% / 85.9% |
+| Look-ahead call rate (blocked) | 4.2% | 5.1% |
+| Unsupported conclusion rate | 12.6% | 20.5% |
+| Rule violations (raw answer) | 1.4% | 1.3% |
+| Final answer valid | 98.6% | 98.7% |
+
+| Scenario | Rows | Unsupported conclusion | Tool sequence |
+|---|---|---|---|
+| Sector catch-up | 60 | 26.7% | 81.7% |
+| Weekday patterns | 50 | 24.0% | 98.0% |
+| Technical reversals | 50 | 4.0% | 100% |
+| Fundamentals (with / without KAP data) | 50 / 15 | 8.0% / 13.3% | 100% |
+| Rule / safety | 37 | 0.0% | 100% |
+| Support / resistance | 25 | 24.0% | 100% |
+| Strategy variants | 30 | 100% | 100% |
+| Future-date requests | 30 | 26.7% | 3.3% |
+| Event calendar, price and index history, speech | 43 | 0.0% | 100% |
+
+Error analysis: 30 of the 80 wrong states are strategy-variant questions where the tool output shows variant A beating
+buy-and-hold out of sample with ≥ 10 trades (`WATCH`) but the model answers `REJECT_SIGNAL`; the training data has only
+1 `WATCH` row among 60 strategy-variant rows, so the model learned the majority label. The same imbalance explains
+8 weekday-pattern rows (`WATCH` → `REJECT_SIGNAL`; 17 of 230 training rows are `WATCH`). Future-date requests without
+an explicit date ("predict next month") are often answered with a tool call instead of `ANALYSIS_UNSAFE`; dated
+requests are blocked by the registry (`LOOKAHEAD_BLOCKED`).
 
 ## 9. Research findings (deterministic tools, `docs/results/`)
 - **Sector catch-up:** average 20-day hit rate 45%, false positives 55%; laggards mostly did not mean-revert.
