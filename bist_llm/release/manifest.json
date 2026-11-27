@@ -1,0 +1,429 @@
+{
+ "project": "BIST-Analyst: fine-tuned local LLM orchestrating deterministic financial-analysis tools",
+ "repository": "https://github.com/yarenerisen/bist100-agentic-financial-harness",
+ "code_commit": "cf9443e2de86a6a1b284709b226117bf6d53c2b4",
+ "created_at": "2026-11-27T15:26:41+0300",
+ "analysis_date": "2026-09-10",
+ "base_model": {
+  "name": "Qwen/Qwen3.5-4B",
+  "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "source": "https://huggingface.co/Qwen/Qwen3.5-4B",
+  "license": "Apache-2.0",
+  "adapter_config_base": "Qwen/Qwen3.5-4B"
+ },
+ "model_weights": {
+  "type": "LoRA adapter only",
+  "format": "safetensors",
+  "adapter": {
+   "path": "bist_llm/runs/qwen35-4b-lora-v4/adapter_model.safetensors",
+   "sha256": "dfd6fcbb94ec7ba8a47e94c22815643ed87d33ce29ef1a9baba88f66dcca478f",
+   "bytes": 121951008
+  },
+  "adapter_config": {
+   "path": "bist_llm/runs/qwen35-4b-lora-v4/adapter_config.json",
+   "sha256": "c2e9a0f463bd92b09feab6aafa48a83e987d632ec5c356fc79e15379571562d7",
+   "bytes": 1247
+  },
+  "lora": {
+   "r": 16,
+   "lora_alpha": 32,
+   "lora_dropout": 0.05,
+   "target_modules": [
+    "gate_proj",
+    "down_proj",
+    "out_proj",
+    "q_proj",
+    "o_proj",
+    "in_proj_qkv",
+    "v_proj",
+    "in_proj_z",
+    "k_proj",
+    "up_proj"
+   ],
+   "peft_type": "LORA"
+  }
+ },
+ "fine_tuning": {
+  "train": {
+   "path": "bist_llm/training/train.jsonl",
+   "sha256": "22871ab1a387aab8154f15f12b65a752f70b92b8d89331c82315fa248b743be5",
+   "bytes": 15912959,
+   "examples": 1560
+  },
+  "validation": {
+   "path": "bist_llm/training/val.jsonl",
+   "sha256": "d22b7b88337aa073463b65a86d58848e169f324ca69497db724768baedf5efcd",
+   "bytes": 1140673,
+   "examples": 109
+  },
+  "test": {
+   "path": "bist_llm/training/test.jsonl",
+   "sha256": "0b7d288684755b4e0506a72cf54e7326b23bf0df743ac61e1641791c8fef27af",
+   "bytes": 1458874,
+   "examples": 143
+  },
+  "config_and_hyperparameters": {
+   "path": "bist_llm/runs/qwen35-4b-lora-v4/training_report.json",
+   "sha256": "d3b0fb8be6a4aa1c35dc36a481ec87f6d22d3e6b88a88ea4c7698ebcc94466dd",
+   "bytes": 5459
+  },
+  "hyperparameters": {
+   "method": "QLoRA",
+   "quantization": "4-bit NF4, double quantization",
+   "compute_dtype": "bf16",
+   "lora_rank": 16,
+   "lora_alpha": 32,
+   "lora_dropout": 0.05,
+   "target_modules": [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj",
+    "in_proj_qkv",
+    "in_proj_z",
+    "out_proj"
+   ],
+   "epochs": 1.0,
+   "learning_rate": 0.0002,
+   "lr_scheduler": "cosine",
+   "warmup": 0.05,
+   "per_device_batch_size": 1,
+   "gradient_accumulation_steps": 16,
+   "effective_batch_size": 16,
+   "max_sequence_length": 6656,
+   "optimizer": "paged_adamw_8bit",
+   "gradient_checkpointing": true,
+   "liger_fused_cross_entropy": true,
+   "loss": "assistant tokens only (tool calls and final answers)",
+   "seed": 42,
+   "frozen_embedding_dtype": "bf16"
+  },
+  "system_prompt": {
+   "path": "bist_llm/training/prompts.py",
+   "sha256": "7a657841a010c92ebc7bf71af2ac1c0e5ff5dca598eec54fe093d29d7e9928b8",
+   "bytes": 6092
+  },
+  "labeling_rules": {
+   "path": "bist_llm/training/labeling_rules.md",
+   "sha256": "8a567c4fd3c57e6e3c402b733411881ef5441db623c7f63d90a63a2b436a2f73",
+   "bytes": 3614
+  },
+  "generator": {
+   "path": "bist_llm/training/generate_dataset.py",
+   "sha256": "26a1a8a1e08c37252f84819201f2b8af76974ac80d18498b572dd2786fec89e9",
+   "bytes": 77925
+  },
+  "note": "answers in the training data are rule-based templates filled only with numbers copied from real tool outputs"
+ },
+ "rag": {
+  "knowledge_base": {
+   "path": "bist_llm/release/knowledge_base.json",
+   "sha256": "b09219a7e83337f43a417b8667276222c79a68b5ece517508c2c4f74ea57b993",
+   "bytes": 79227
+  },
+  "retrieval": "deterministic tool-based retrieval over timestamped structured sources (no vector store)"
+ },
+ "execution_traces": {
+  "path": "bist_llm/release/execution_traces.json",
+  "sha256": "7281a9c97f8c34236ce2249b9192b5e58e0f09ec77fef07e4c649da8c9afa7bd",
+  "bytes": 323626,
+  "scenarios": 10,
+  "summary": [
+   {
+    "scenario_id": "S1_sector_catch_up_tr",
+    "state": "WATCH",
+    "answer_source": "model",
+    "tools": [
+     "rank_sector_relative_strength",
+     "get_fundamental_metrics",
+     "get_macro_context",
+     "run_backtest"
+    ],
+    "answer_valid": true,
+    "latency_s": 45.63
+   },
+   {
+    "scenario_id": "S1_sector_catch_up_en",
+    "state": "WATCH",
+    "answer_source": "model",
+    "tools": [
+     "rank_sector_relative_strength",
+     "get_fundamental_metrics",
+     "get_macro_context",
+     "run_backtest"
+    ],
+    "answer_valid": true,
+    "latency_s": 39.96
+   },
+   {
+    "scenario_id": "S2_weekday_pattern_tr",
+    "state": "REJECT_SIGNAL",
+    "answer_source": "model",
+    "tools": [
+     "test_weekday_pattern",
+     "test_weekday_pattern"
+    ],
+    "answer_valid": true,
+    "latency_s": 32.14
+   },
+   {
+    "scenario_id": "S2_weekday_pattern_en",
+    "state": "REJECT_SIGNAL",
+    "answer_source": "model",
+    "tools": [
+     "test_weekday_pattern",
+     "test_weekday_pattern"
+    ],
+    "answer_valid": true,
+    "latency_s": 28.25
+   },
+   {
+    "scenario_id": "S3_technical_reversal_tr",
+    "state": "WATCH",
+    "answer_source": "model",
+    "tools": [
+     "calculate_indicators",
+     "detect_reversal_events"
+    ],
+    "answer_valid": true,
+    "latency_s": 31.87
+   },
+   {
+    "scenario_id": "S3_technical_reversal_en",
+    "state": "WATCH",
+    "answer_source": "model",
+    "tools": [
+     "calculate_indicators",
+     "detect_reversal_events"
+    ],
+    "answer_valid": true,
+    "latency_s": 28.7
+   },
+   {
+    "scenario_id": "S4_fundamentals_reaction_tr",
+    "state": "FUNDAMENTAL_IMPROVEMENT_CANDIDATE",
+    "answer_source": "model",
+    "tools": [
+     "get_fundamental_metrics",
+     "calculate_fundamental_change"
+    ],
+    "answer_valid": true,
+    "latency_s": 55.4
+   },
+   {
+    "scenario_id": "S4_fundamentals_reaction_en",
+    "state": "FUNDAMENTAL_IMPROVEMENT_CANDIDATE",
+    "answer_source": "model",
+    "tools": [
+     "get_fundamental_metrics",
+     "calculate_fundamental_change"
+    ],
+    "answer_valid": true,
+    "latency_s": 50.12
+   },
+   {
+    "scenario_id": "S5_rule_safety_tr",
+    "state": "INVESTIGATE",
+    "answer_source": "model",
+    "tools": [
+     "get_macro_context"
+    ],
+    "answer_valid": true,
+    "latency_s": 20.49
+   },
+   {
+    "scenario_id": "S5_rule_safety_en",
+    "state": "INVESTIGATE",
+    "answer_source": "model",
+    "tools": [
+     "get_macro_context"
+    ],
+    "answer_valid": true,
+    "latency_s": 17.84
+   }
+  ]
+ },
+ "source_code": {
+  "files": [
+   {
+    "path": "bist_llm/data/download_prices.py",
+    "sha256": "5b335411eb5d815f7d162c9e0029d81a208223c1bf5d1f8e4a8dfb92b9e86067",
+    "bytes": 1516
+   },
+   {
+    "path": "bist_llm/data/parse_financials.py",
+    "sha256": "cad91f262a4d4dcee1388b1aad7051d165dd7787d29c6e823e82d8f165d14c8a",
+    "bytes": 11152
+   },
+   {
+    "path": "bist_llm/data/speech_pipeline.py",
+    "sha256": "a31a58aad71b1a018c90570f63f033138a1c29a9702b2d4214e6fa683c25a35b",
+    "bytes": 4516
+   },
+   {
+    "path": "bist_llm/harness/__init__.py",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+   },
+   {
+    "path": "bist_llm/harness/compare.py",
+    "sha256": "740e341c98d5a50a3d4beb8e985ad4a61d0bed14f13bf27a50e78f3bc4098a5f",
+    "bytes": 2608
+   },
+   {
+    "path": "bist_llm/harness/evaluate.py",
+    "sha256": "0577f4075a9025fa52d5334e8277c9f67f0908b28745eca488d868c853d895f5",
+    "bytes": 10541
+   },
+   {
+    "path": "bist_llm/harness/evidence.py",
+    "sha256": "5c3668a900399863101175dc05a51cfcb6d3e8d26900e30b8e985393392e5d3d",
+    "bytes": 2586
+   },
+   {
+    "path": "bist_llm/harness/memory.py",
+    "sha256": "c73d770e16d0c012932081b66b94a87eb1b6add90a14a83b8c4fa69012d67f3f",
+    "bytes": 1806
+   },
+   {
+    "path": "bist_llm/harness/run_agent.py",
+    "sha256": "7a4b48f25be1171876073be7691385a5124eafb29bf0857390c7b162f179bb92",
+    "bytes": 28694
+   },
+   {
+    "path": "bist_llm/harness/score_raw.py",
+    "sha256": "5a2622af240aac2d985a1e890ecf0dfb2ad6b082be3f01f7fd5811b340c0b471",
+    "bytes": 3179
+   },
+   {
+    "path": "bist_llm/harness/test_workflow.py",
+    "sha256": "dd3bd84a3ebe29eaddfc0e0f9aa681ff8318165e111e6b671c58314464a56f65",
+    "bytes": 1989
+   },
+   {
+    "path": "bist_llm/harness/validate.py",
+    "sha256": "e1915d83f0653bc8f4ad44517cd163a612f603cefb7be50fbb0cc08d4d638602",
+    "bytes": 3912
+   },
+   {
+    "path": "bist_llm/mcp_server.py",
+    "sha256": "e18aef87b9bbcdc2e2cb69faa0079176c03d05858627d80281427b6ffacbad83",
+    "bytes": 2657
+   },
+   {
+    "path": "bist_llm/release/__init__.py",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+   },
+   {
+    "path": "bist_llm/release/build_knowledge_base.py",
+    "sha256": "d64a4b3b28a7f2a5d0196bb0c6c63f99ad475817f188979bb1dacbaf0e8e3c69",
+    "bytes": 6435
+   },
+   {
+    "path": "bist_llm/release/build_manifest.py",
+    "sha256": "714f1c7a9e1438a3e623d264dce8cab6e3a34e9eafb9cc3c1926abccd56b669b",
+    "bytes": 5749
+   },
+   {
+    "path": "bist_llm/release/make_traces.py",
+    "sha256": "cab6fde0c7bf80d24aa7b20d7043791c5df6df89d0be8d05b127ed1633e1d4fc",
+    "bytes": 3142
+   },
+   {
+    "path": "bist_llm/research/__init__.py",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+   },
+   {
+    "path": "bist_llm/research/plot_signals.py",
+    "sha256": "783861d0e14350569c8b718d3b9bf82fe4a812b3fb266669f98cc670aa46c877",
+    "bytes": 4181
+   },
+   {
+    "path": "bist_llm/research/run_scenarios.py",
+    "sha256": "10c1fd56539d8e04bdd364f5a292b32feb6299dd762c68791f552928f2bc95a2",
+    "bytes": 14657
+   },
+   {
+    "path": "bist_llm/tools/__init__.py",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+   },
+   {
+    "path": "bist_llm/tools/backtest.py",
+    "sha256": "48a9e60224a4f7cccb34ec572a65b155f06abec9fec8eb65e47f2ebf0dd510ef",
+    "bytes": 11543
+   },
+   {
+    "path": "bist_llm/tools/context.py",
+    "sha256": "58250cf2c341816f58bc28092a343050ee4002a44d90872f0da3d6d8ad523e46",
+    "bytes": 5605
+   },
+   {
+    "path": "bist_llm/tools/core.py",
+    "sha256": "9c56725f5c61ffddbac2cb91d32103d59beaf08998929b578beeb1d93b4f67bc",
+    "bytes": 22358
+   },
+   {
+    "path": "bist_llm/tools/events.py",
+    "sha256": "904a7d846cb21a3f6d498d22d65bda293de38bb66e1aa10c1c0fb0c7842c3691",
+    "bytes": 7830
+   },
+   {
+    "path": "bist_llm/tools/levels.py",
+    "sha256": "d20dbfa054c81686e4151471dcb48b053d1bbb2b745f63f1c1f8a892eab40c73",
+    "bytes": 4536
+   },
+   {
+    "path": "bist_llm/tools/macro_fund.py",
+    "sha256": "83400cf8292bf5db725ff1114c4ab577777d9641068f5888657c000d91d47726",
+    "bytes": 11198
+   },
+   {
+    "path": "bist_llm/tools/quality.py",
+    "sha256": "d2a5157b8d77ff35203ccf415c964beb5ffce08a21cb2d063e42f74dfe8da380",
+    "bytes": 3528
+   },
+   {
+    "path": "bist_llm/tools/registry.py",
+    "sha256": "83222497f369a71d94ef231b816bb185395dc9382636955142f453de2d7cb746",
+    "bytes": 16048
+   },
+   {
+    "path": "bist_llm/training/__init__.py",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+   },
+   {
+    "path": "bist_llm/training/finetune_qlora.py",
+    "sha256": "b8d1977db3d80b0378db51e350d9a6eb8069dba17a03a570237a8880d51069ec",
+    "bytes": 10103
+   },
+   {
+    "path": "bist_llm/training/generate_dataset.py",
+    "sha256": "26a1a8a1e08c37252f84819201f2b8af76974ac80d18498b572dd2786fec89e9",
+    "bytes": 77925
+   },
+   {
+    "path": "bist_llm/training/prompts.py",
+    "sha256": "7a657841a010c92ebc7bf71af2ac1c0e5ff5dca598eec54fe093d29d7e9928b8",
+    "bytes": 6092
+   }
+  ],
+  "entry_points": {
+   "ask_a_question": "python -m harness.run_agent --backend hf --model <adapter> --load-4bit \"<question>\"",
+   "five_scenarios": "python -m release.make_traces --backend hf --model <adapter> --load-4bit",
+   "live_question": "python -m release.make_traces --backend hf --model <adapter> --load-4bit --question \"<question>\" --out release/live_trace.json",
+   "evaluation": "python -m harness.evaluate --backend hf --model <adapter> --load-4bit --limit 40"
+  }
+ },
+ "integrity": {
+  "no_question_specific_answers": "the harness has no question-to-answer mapping; every answer is generated by the model from tool outputs (answer_source=model or model_after_validation_retry)",
+  "harness_fallback": "if the model's answer fails validation twice, or the risk gate holds back an unverified candidate, the harness returns a generic ANALYSIS_UNSAFE / INVESTIGATE notice; such answers are labelled answer_source=harness_fallback in the trace and are never presented as model output",
+  "numbers": "every number in an accepted answer must appear in a tool output (harness/validate.py)"
+ }
+}
