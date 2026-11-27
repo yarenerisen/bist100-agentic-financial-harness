@@ -799,11 +799,27 @@ def scan_catchup(n=1500):
     print("catch-up candidate combos found:", len(CATCHUP_POOL))
 
 
-def run():
-    make_synthetic_fundamentals(TRAIN_TICKERS + sorted(TEST_TICKERS))
-    scan_catchup()
+# extended held-out test set (python generate_dataset.py --ext-test): ~3x the test split, more weight on the
+# small scenarios, a different seed; reuses the existing fundamentals file and leaves train/val/test untouched
+EXT_PLAN = {"test_ext": [(s1, 60), (s2, 50), (s3, 50), (s4, 50), (None, 15), (s5, 40), (edge_future, 30), (edge_unknown, 15),
+                         (edge_history, 15), (s6_sr, 25), (s7_variants, 30), (s8_events, 20), (s9_speech, 5), (s10_index, 10)]}
+
+
+def _question(messages):
+    return next(m["content"] for m in messages if m["role"] == "user")
+
+
+def run(ext=False):
+    global PLAN
+    if ext:
+        rng.seed(2026); PLAN = EXT_PLAN
+        seen_q = {_question(json.loads(l)["messages"]) for f in ("train", "val", "test") for l in open(OUT / f"{f}.jsonl")}
+    else:
+        make_synthetic_fundamentals(TRAIN_TICKERS + sorted(TEST_TICKERS))
+        scan_catchup()
     stats = {}
-    for split, plan in PLAN.items():
+    for out_name, plan in PLAN.items():
+        split = "test" if out_name == "test_ext" else out_name
         tickers = TRAIN_TICKERS if split != "test" else sorted(TEST_TICKERS)
         rows = []
         for fn, n in plan:
@@ -819,21 +835,26 @@ def run():
                     r = fn(lang, split, tickers)
                 if r is None:
                     continue
+                if ext:    # no question seen in train/val/test, no duplicates inside the extended set
+                    if _question(r["messages"]) in seen_q:
+                        continue
+                    seen_q.add(_question(r["messages"]))
                 # balance labels: keep frequent states less often so rare candidate states are learned
                 if rng.random() > ACCEPT.get(r["state"], 1.0):
                     continue
                 r["scenario"] = "s4_empty" if fn is None else fn.__name__
                 rows.append(r); made += 1
         rng.shuffle(rows)
-        with open(OUT / f"{split}.jsonl", "w") as f:
+        with open(OUT / f"{out_name}.jsonl", "w") as f:
             for r in rows:
                 f.write(json.dumps({"messages": r["messages"], "meta": {"scenario": r["scenario"], "state": r["state"], "fundamentals": r["fundamentals"]}}, ensure_ascii=False) + "\n")
         lens = [sum(len(m["content"]) for m in r["messages"]) for r in rows]
-        stats[split] = {"n": len(rows), "chars_mean": int(np.mean(lens)), "chars_max": int(np.max(lens)),
+        stats[out_name] = {"n": len(rows), "chars_mean": int(np.mean(lens)), "chars_max": int(np.max(lens)),
                         "states": pd.Series([r["state"] for r in rows]).value_counts().to_dict(),
                         "scenarios": pd.Series([r["scenario"] for r in rows]).value_counts().to_dict()}
     print(json.dumps(stats, indent=1, ensure_ascii=False))
 
 
 if __name__ == "__main__":
-    run()
+    import sys
+    run(ext="--ext-test" in sys.argv)

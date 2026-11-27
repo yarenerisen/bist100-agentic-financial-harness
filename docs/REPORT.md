@@ -1,7 +1,8 @@
 # BIST-Analyst — Technical Report
 
-_Draft. Sections marked **[TBD: Kaggle run]** are filled from `results/eval_*.json`, `runs/qwen35-4b-lora/training_report.json`
-and `release/execution_traces.json` once the Qwen3.5-4B fine-tuning run finishes._
+_Numbers come from `results/eval_*.json`, `runs/qwen35-4b-lora-v4/training_report.json` and `release/execution_traces.json`.
+"v4" is the released adapter; "v3" and "v1" are earlier adapters trained on the same pipeline (v3: same questions and
+states, without the `DECISION_BASIS` line and with compact weekday patterns; v1: the first dataset version)._
 
 ## 1. Summary
 BIST-Analyst is a fine-tuned, locally run open-source LLM that answers research questions about BIST stocks by
@@ -15,7 +16,7 @@ computes numbers itself, never gives investment advice, and uses no data publish
 ## 2. Base model and why
 | Item | Value |
 |---|---|
-| Base model | **Qwen/Qwen3.5-4B** (Apache-2.0, released 2026-03), revision **[TBD: HF commit in manifest.json]**; the text model is trained (the vision encoder is not loaded) |
+| Base model | **Qwen/Qwen3.5-4B** (Apache-2.0, released 2026-03), revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`; the text model is trained (the vision encoder is not loaded) |
 | Why | newest official small Qwen generation (Qwen3.8 has no open model below 27B); strong instruction following and JSON/tool-call ability in the recommended 1–8B range; good Turkish and English; runs as a ~3 GB Q4_K_M GGUF on the 6 GB laptop GPU used for the live demo, and fine-tunes on one 24 GB GPU |
 | Thinking mode | disabled; every assistant turn starts with an empty `<think></think>` block in training and inference (`training/prompts.py`) so multi-turn tool conversations are formatted identically |
 | Additional comparison | Qwen2.5-3B-Instruct fine-tuned on the same data on a local RTX 4070 Laptop GPU (Appendix A) |
@@ -80,8 +81,10 @@ computes numbers itself, never gives investment advice, and uses no data publish
 | Max length | 6,656 tokens (no training example exceeds it) |
 | Loss | assistant tokens only (tool calls + final answers) |
 | Memory | Liger fused linear cross-entropy (the 152k-vocabulary logits are never materialised) |
-| Epochs / time / hardware | **[TBD: Kaggle run]** (1 epoch on 2× T4) |
-| Loss curve | **[TBD: training_report.json]** |
+| Precision | bf16 compute; the frozen tied embedding / lm_head (248k × 2,560) is kept in bf16 after k-bit preparation so training fits in 8 GB |
+| Epochs / time / hardware | 1 epoch (98 optimizer steps), 141 min, one RTX 4070 Laptop GPU (8 GB) |
+| Loss curve | training loss 0.726 (step 5) → 0.103 (20) → 0.017 (40) → 0.007 (60) → 0.004 (95); validation loss 0.0948 (step 20) → 0.0129 (40) → 0.0074 (60) → 0.0052 (80) → **0.0048** (98, final) |
+| Adapter | `adapter_model.safetensors`, SHA-256 `dfd6fcbb94ec7ba8a47e94c22815643ed87d33ce29ef1a9baba88f66dcca478f` |
 
 ## 7. Running the model locally
 - Transformers: `python -m harness.run_agent --backend hf --model <adapter> --load-4bit "<question>"`
@@ -90,19 +93,31 @@ computes numbers itself, never gives investment advice, and uses no data publish
 - The harness refuses non-localhost model endpoints, so no cloud AI API is called.
 
 ## 8. Evaluation
-Same first 40 test rows for base and fine-tuned models; ablation on the first 20 rows.
+All 143 test rows (held-out tickers), full harness (level E), temperature 0. "Unsupported conclusion" = the final state
+differs from the state the labelling rules give for the same tool outputs.
 
-### 8.1 Base vs fine-tuned (full harness, level E) — **[TBD: Kaggle run]**
-| Metric | Base Qwen3.5-4B | Fine-tuned |
-|---|---|---|
-| Numerical hallucination rate | | |
-| Invalid tool-call rate | | |
-| Correct tool sequence / arguments | | |
-| Unsupported conclusion rate | | |
-| Rule violations (raw answer) | | |
-| Evidence completeness | | |
-| Reproducibility (3 runs) | | |
-| Mean latency | | |
+### 8.1 Base vs fine-tuned (full harness, level E, 143 test rows)
+| Metric | Base Qwen3.5-4B | v1 | v3 | **v4 (released)** |
+|---|---|---|---|---|
+| Numerical hallucination rate | 17.5% | 9.8% | 0.7% | 1.4% |
+| Invalid tool-call rate | 4.2% | 0.7% | 0.0% | 0.7% |
+| Correct tool sequence | 10.5% | 80.4% | 88.8% | **93.7%** |
+| Correct tool arguments | 8.4% | 78.3% | 84.6% | **88.8%** |
+| Look-ahead call rate (blocked by the registry) | 0.0% | 1.4% | 2.1% | 4.2% |
+| Unsupported conclusion rate | 79.0% | 33.6% | 27.3% | **12.6%** |
+| Rule violations (raw answer) | 28.7% | 11.2% | 2.8% | **1.4%** |
+| Final answer valid | 84.6% | 92.3% | 99.3% | 98.6% |
+| Evidence completeness | 99.1% | 100% | 100% | 100% |
+| Reproducibility | 100% | 100% | 100% | 100% |
+| Mean latency | 7.8 s | 10.0 s | 10.0 s | 30.1 s* |
+
+\* v4 was evaluated with Transformers 4-bit on the 8 GB laptop GPU (no `causal_conv1d` kernel); the others ran on vLLM.
+
+Unsupported-conclusion rate per scenario (v3 → v4): sector catch-up 36% → 16%, weekday patterns 12% → 8%, technical
+reversals 24% → 0%, fundamentals 70% → 10%, event calendar 20% → 0%, rule/safety 0% → 0%. Two small groups got worse:
+strategy variants (5 rows, 40% → 100%: the model writes `REJECT_SIGNAL` although the tool output shows a variant that beat
+buy-and-hold with ≥ 10 trades) and future-date requests (5 rows, 40% → 60%: undated "predict next month" questions are
+not recognised as look-ahead). Both are measured on the larger set in 8.5.
 
 ### 8.2 Raw base model without tools or data (5 reference scenario questions)
 _Measured with the earlier base model Qwen3-8B (`training/baseline/`); the Qwen3.5-4B raw-LLM numbers are ablation level A in 8.3._
@@ -112,9 +127,29 @@ _Measured with the earlier base model Qwen3-8B (`training/baseline/`); the Qwen3
 | Price target given | 20% (scenario 5: "13.25–13.75 TL") |
 | Required format / allowed state | 0% |
 
-### 8.3 Harness ablation A–E — **[TBD: Kaggle run]**
+### 8.3 Harness ablation A–E (first 40 test rows, v3 adapter)
+A = raw LLM, no tools; B = tools; C = + state machine; D = + validator and retry; E = full harness (+ risk gate, data-quality gate).
+| Level | Model | Hallucination | Tool sequence | Unsupported conclusion | Final answer valid |
+|---|---|---|---|---|---|
+| A | base / v3 | 70.0% / 10.0% | 2.5% / 2.5% | 100% / 100% | 0% / 0% |
+| B | base / v3 | 30.0% / 0.0% | 12.5% / 85.0% | 80.0% / 20.0% | 65.0% / 97.5% |
+| C | base / v3 | 32.5% / 0.0% | 15.0% / 85.0% | 80.0% / 20.0% | 62.5% / 97.5% |
+| D | base / v3 | 20.0% / 0.0% | 15.0% / 85.0% | 80.0% / 20.0% | 90.0% / 100% |
 
-### 8.4 Real vs synthetic fundamentals — **[TBD: by_fundamentals_source]**
+Without tools neither model can answer in the required form. Fine-tuning gives most of the gain; the validator and the
+gates turn the remaining invalid answers into labelled fallbacks instead of wrong answers.
+
+### 8.4 Real vs synthetic fundamentals (v4, level E)
+| Fundamentals source | Rows | Hallucination | Tool sequence | Unsupported conclusion |
+|---|---|---|---|---|
+| none (non-fundamental questions) | 93 | 1.1% | 93.5% | 7.5% |
+| real KAP | 25 | 0.0% | 100% | 32.0% |
+| synthetic | 25 | 4.0% | 88.0% | 12.0% |
+
+### 8.5 Extended held-out test set — **[TBD: running]**
+`training/test_ext.jsonl` (`python training/generate_dataset.py --ext-test`): 390 new conversations on the held-out
+tickers with a different seed, none of whose questions appears in train, validation or test; more rows for the small
+scenarios (30 strategy-variant and 30 future-date questions).
 
 ## 9. Research findings (deterministic tools, `docs/results/`)
 - **Sector catch-up:** average 20-day hit rate 45%, false positives 55%; laggards mostly did not mean-revert.
@@ -126,9 +161,17 @@ _Measured with the earlier base model Qwen3-8B (`training/baseline/`); the Qwen3
 - **Strategy variants:** each added filter cut trades (116 → 8 in-sample); out-of-sample gains rest on very few trades.
 
 ## 10. Reference scenario questions and live question
-Execution traces: `release/execution_traces.json` **[TBD]**, for the Turkish and the English version of each reference scenario question. Each trace records the model and adapter SHA-256,
+Execution traces: `release/execution_traces.json`, for the Turkish and the English version of each reference scenario question. Each trace records the model and adapter SHA-256,
 system and user prompts, every model turn and tool call with timestamps, tool outputs, answer, `answer_source`,
 temperature and seed.
+
+| Scenario | State (TR / EN) | Tools | Answer source |
+|---|---|---|---|
+| 1 Sector catch-up | WATCH / WATCH (lag −3.25 pp < 5.0 pp threshold) | sector strength, fundamentals, macro, backtest | model |
+| 2 Weekday pattern | REJECT_SIGNAL / REJECT_SIGNAL (in-sample p = 0.4059, out-of-sample p = 0.735) | weekday pattern ×2 | model |
+| 3 Technical reversal | WATCH / WATCH (72.2% success, last event 51 trading days ago) | indicators, reversal events | model |
+| 4 Fundamentals | FUNDAMENTAL_IMPROVEMENT_CANDIDATE / same | fundamentals, fundamental change | model |
+| 5 Rule safety | INVESTIGATE / INVESTIGATE (weekly corr. with USD/TRY = −0.272) | macro context | model |
 
 ## 11. Limitations
 - Fundamentals cover 13 companies from 2024Q4; quarterly values are YTD differences under TMS 29 (approximate);
@@ -139,5 +182,6 @@ temperature and seed.
 - Event studies are in-sample with overlapping windows; combined-condition groups are small.
 - The model can still fail on very unusual phrasings; failed validations end in a labelled harness fallback, never in an unlabelled answer.
 
-## Appendix A — Qwen2.5-3B comparison **[TBD: results_3b]**
-Trained locally (RTX 4070 Laptop, 8 GB, bf16, Liger, 2 epochs, 3 h 48 min); validation loss 0.136 → 0.0058.
+## Appendix A — Qwen2.5-3B
+Trained locally on an earlier dataset version (1,440 rows; RTX 4070 Laptop, 8 GB, bf16, Liger, 2 epochs, 3 h 48 min);
+validation loss 0.136 → 0.0058. It was not evaluated on the current test set and is not part of the release.
