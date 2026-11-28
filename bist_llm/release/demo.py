@@ -6,8 +6,14 @@ Type a question and press Enter; an empty line or "q" quits.
 
 Without a GPU (to work on the display): python -m release.demo --from-traces release/live_check_traces.json
 shows saved traces instead of running the model (pick one by number)."""
-import argparse, json, sys, time
+import argparse, json, os, sys, time, warnings
 from pathlib import Path
+
+if "--verbose" not in sys.argv:      # hide library notices (deprecations, kernel fallbacks, progress bars) in the demo
+    os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+    os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
+    os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    warnings.filterwarnings("ignore")
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -90,6 +96,7 @@ if __name__ == "__main__":
     ap.add_argument("--out-dir", default=str(ROOT / "release" / "live_traces"))
     ap.add_argument("--from-traces", help="show saved traces from this file instead of running the model (no GPU needed)")
     ap.add_argument("--plain", action="store_true", help="plain text output")
+    ap.add_argument("--verbose", action="store_true", help="show library warnings and progress bars")
     a = ap.parse_args()
     con = Console() if (Console and not a.plain) else None
     show = (lambda t, saved: show_rich(con, t, saved)) if con else show_plain
@@ -110,6 +117,12 @@ if __name__ == "__main__":
     if not a.model:
         ap.error("--model is required (or use --from-traces)")
     from harness.run_agent import run, make_backend
+    if not a.verbose:
+        try:
+            from transformers.utils import logging as hf_logging
+            hf_logging.set_verbosity_error(); hf_logging.disable_progress_bar()
+        except Exception:
+            pass
     a.load_4bit, a.allow_remote = not a.no_4bit, False
     out = Path(a.out_dir); out.mkdir(parents=True, exist_ok=True)
     print("loading the model (about a minute)...", flush=True)
