@@ -141,9 +141,21 @@ _Measured with the earlier base model Qwen3-8B (`training/baseline/`); the Qwen3
 | Price target given | 20% (scenario 5: "13.25–13.75 TL") |
 | Required format / allowed state | 0% |
 
-### 8.3 Harness ablation A–E (first 40 test rows)
+### 8.3 Harness ablation A–E (first 40 test rows, base model vs v5)
 A = raw LLM, no tools; B = tools; C = + state machine; D = + validator and retry; E = full harness (+ risk gate, data-quality gate).
-<!-- ABLATION_TABLE -->
+| Level | Hallucination (base / v5) | Tool sequence (base / v5) | Unsupported conclusion (base / v5) | Final answer valid (base / v5) |
+|---|---|---|---|---|
+| A raw LLM | 70.0% / 17.5% | 2.5% / 2.5% | 100% / 100% | 0% / 0% |
+| B + tools | 30.0% / 2.5% | 12.5% / 92.5% | 80.0% / 22.5% | 65.0% / 95.0% |
+| C + state machine | 32.5% / 5.0% | 15.0% / 92.5% | 80.0% / 22.5% | 62.5% / 95.0% |
+| D + validator and retry | 20.0% / 5.0% | 15.0% / 92.5% | 80.0% / 22.5% | 90.0% / 95.0% |
+| E full harness | 25.0% / 5.0% | 15.0% / 92.5% | 72.5% / 22.5% | 82.5% / 95.0% |
+
+Level E is the same first 40 rows taken from the full 143-row run. These 40 rows are harder than average for v5
+(22.5% unsupported conclusions vs 13.3% on all 143).
+
+Reproducibility (v5, first 15 test rows, each run 3 times at temperature 0): 100% identical states, tool calls and
+answers.
 
 Without tools neither model can answer in the required form. Fine-tuning gives most of the gain; the validator and the
 gates turn the remaining invalid answers into labelled fallbacks instead of wrong answers.
