@@ -134,6 +134,28 @@ def _err(tool, msg, code="INVALID_CALL"):
     return {"tool": tool, "error": code, "message": msg}
 
 
+# Turkish case suffixes that can stick to a ticker when it is typed without an apostrophe ("akbnka" = AKBNK'a)
+TR_SUFFIXES = {"A", "E", "I", "İ", "U", "Ü", "YA", "YE", "YI", "Yİ", "YU", "YÜ", "DA", "DE", "TA", "TE", "DAN", "DEN", "TAN",
+               "TEN", "IN", "İN", "UN", "ÜN", "NIN", "NİN", "NUN", "NÜN", "LA", "LE", "YLA", "YLE"}
+
+
+def resolve_ticker(raw):
+    """(ticker, note): exact ticker, or a known ticker followed by an apostrophe / Turkish case suffix
+    ("AKBNK'A", "AKBNKA" -> AKBNK) when exactly one known ticker matches; otherwise (raw, None)."""
+    t = str(raw).strip().upper().replace(".IS", "")
+    known = set(core.available_tickers())
+    if t in known:
+        return t, None
+    for sep in ("'", "’"):
+        if sep in t and t.split(sep)[0] in known:
+            return t.split(sep)[0], f"{raw} interpreted as {t.split(sep)[0]}"
+    hits = {k for k in known if t.startswith(k) and t[len(k):] in TR_SUFFIXES}
+    if len(hits) == 1:
+        k = hits.pop()
+        return k, f"{raw} interpreted as {k} (Turkish suffix '{t[len(k):]}')"
+    return t, None
+
+
 DROP_KEYS = {"notes", "method", "parameters", "point_in_time_rule", "relationship_note", "sector_strong_definition",
              "pattern_weeks_note", "success_definition", "execution_note", "source"}
 DROP_SUFFIX = ("median_return_1d_pct", "median_return_3d_pct", "median_return_10d_pct", "median_rel_return_pp",
@@ -194,14 +216,28 @@ def _call_tool(name, args=None):
             return _err(name, f"{k}={args[k]} is after the analysis cutoff 2026-09-10; refusing (look-ahead)", "LOOKAHEAD_BLOCKED")
     if "start" in args and "end" in args and args["start"] > args["end"]:
         return _err(name, "start is after end")
+    notes = []
     for k in ("ticker",):
         if k in args:
-            t = str(args[k]).upper().replace(".IS", "")
+            t, note = resolve_ticker(args[k])
+            if note:
+                notes.append(note)
             if t in core.EXCLUDE:
                 return _err(name, f"{t} excluded from study universe", "TICKER_EXCLUDED")
             if t not in core.available_tickers():
                 return _err(name, f"no data for ticker {t}", "UNKNOWN_ENTITY")
             args[k] = t
+    for k in ("tickers", "sector"):          # ticker lists (a sector name is left to core._resolve)
+        v = args.get(k)
+        if isinstance(v, list):
+            fixed = []
+            for x in v:
+                if isinstance(x, str) and x.lower() not in core.SECTORS and x.lower() not in core.SECTOR_ALIASES:
+                    x, note = resolve_ticker(x)
+                    if note:
+                        notes.append(note)
+                fixed.append(x)
+            args[k] = fixed
     if name == "test_weekday_pattern" and "pattern" in args:
         args["pattern"] = normalize_pattern(args["pattern"])
     if "event" in props and "event" in args and args["event"] not in events.EVENTS:
@@ -209,7 +245,10 @@ def _call_tool(name, args=None):
     if name == "run_backtest" and args.get("strategy") not in STRATEGIES:
         return _err(name, f"unknown strategy; allowed: {STRATEGIES}")
     try:
-        return json.loads(json.dumps(fn(**args), default=str))
+        out = json.loads(json.dumps(fn(**args), default=str))
+        if notes and isinstance(out, dict):
+            out["input_notes"] = notes
+        return out
     except KeyError as e:
         return _err(name, f"unknown sector or ticker: {e}", "UNKNOWN_ENTITY")
     except Exception as e:
