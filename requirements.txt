@@ -5,6 +5,7 @@ pyarrow>=14
 yfinance>=0.2
 matplotlib>=3.7
 mcp>=2.3,<3          # only for mcp_server.py
+streamlit>=1.40      # only for the web UI (release/ui.py)
 # Fine-tuning and HF inference (NVIDIA GPU). Install PyTorch with CUDA first, e.g.
 #   pip install torch --index-url https://download.pytorch.org/whl/cu128
 # Qwen3.5-4B needs transformers 5.x; the release was trained and evaluated with the versions in brackets

@@ -1,0 +1,12 @@
+# Used when the UI is started from bist_llm/ (streamlit run release/ui.py): local only, no telemetry.
+[server]
+address = "127.0.0.1"
+port = 8501
+headless = true
+
+[browser]
+gatherUsageStats = false
+serverAddress = "127.0.0.1"
+
+[client]
+toolbarMode = "viewer"
