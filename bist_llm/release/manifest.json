@@ -1,8 +1,8 @@
 {
  "project": "BIST-Analyst: fine-tuned local LLM orchestrating deterministic financial-analysis tools",
  "repository": "https://github.com/yarenerisen/bist100-agentic-financial-harness",
- "code_commit": "094552e094265802243584859b0b3e7e8e16e0d7",
- "created_at": "2026-11-28T03:25:59+0300",
+ "code_commit": "5e6eff90bc7ab615c4803acfb2e9a2fc668e7bea",
+ "created_at": "2026-11-28T03:55:14+0300",
  "analysis_date": "2026-09-10",
  "base_model": {
   "name": "Qwen/Qwen3.5-4B",
@@ -337,6 +337,11 @@
     "bytes": 0
    },
    {
+    "path": "bist_llm/release/answer_format.py",
+    "sha256": "fa8f38f3df9e8c9ce7e9596a3ad8b5b8ff5b4664baa6aa6cae660e6214da7c39",
+    "bytes": 2493
+   },
+   {
     "path": "bist_llm/release/build_knowledge_base.py",
     "sha256": "d64a4b3b28a7f2a5d0196bb0c6c63f99ad475817f188979bb1dacbaf0e8e3c69",
     "bytes": 6435
@@ -348,8 +353,8 @@
    },
    {
     "path": "bist_llm/release/demo.py",
-    "sha256": "85b300092869c7ccb706f41cf715a36c9c99c4532213395c9d7e0d0c7e57d73c",
-    "bytes": 2278
+    "sha256": "f450e174be93378bb79671a20db03a016cb52aff9b8e7c120aa680a04d43a298",
+    "bytes": 6805
    },
    {
     "path": "bist_llm/release/make_traces.py",
@@ -413,8 +418,8 @@
    },
    {
     "path": "bist_llm/tools/registry.py",
-    "sha256": "83222497f369a71d94ef231b816bb185395dc9382636955142f453de2d7cb746",
-    "bytes": 16048
+    "sha256": "ea3353db802b21124c12c45cec6a3274a1d0c8da60d0472af20953c862477422",
+    "bytes": 17800
    },
    {
     "path": "bist_llm/training/__init__.py",
