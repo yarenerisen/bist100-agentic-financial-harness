@@ -267,6 +267,10 @@ python -m release.make_traces --backend hf --model <adapter folder> --load-4bit 
   relationship; oil and commodity prices are not in the data.
 - Test questions are generated from templates similar to the training data (with held-out tickers and unseen
   templates); the 20 hand-written questions in 8.6 are the closest measure of unseen phrasings.
+- Questions outside the reference scenarios (e.g. a general "how is AKBNK doing?") are mapped to the nearest trained
+  scenario; the answer stays within the rules (no invented numbers, no advice) but may not address the question.
+- Tickers typed with a Turkish case suffix ("akbnka", "THYAO'da") are resolved by the registry and reported in
+  `input_notes`; invented tickers return `UNKNOWN_ENTITY`.
 - The model can still fail on very unusual phrasings; failed validations end in a labelled harness fallback, never in an unlabelled answer.
 
 ## Appendix A — Qwen2.5-3B
