@@ -1,0 +1,104 @@
+{
+ "questions": [
+  {
+   "id": "L01_s1",
+   "question_tr": "In the automotive sector (FROTO, TOASO, DOAS, OTKAR), which stock lagged the sector median the most over the last 20 trading days up to 10.09.2026? Over 01.01.2024 – 10.09.2026, did similar lags close within 5, 10 and 20 days? Can the stock be labeled POTENTIAL_CATCH_UP_CANDIDATE?",
+   "question_en": "In the automotive sector (FROTO, TOASO, DOAS, OTKAR), which stock lagged the sector median the most over the last 20 trading days up to 10.09.2026? Over 01.01.2024 – 10.09.2026, did similar lags close within 5, 10 and 20 days? Can the stock be labeled POTENTIAL_CATCH_UP_CANDIDATE?"
+  },
+  {
+   "id": "L02_s1",
+   "question_tr": "Çimento sektöründe (OYAKC, CIMSA, BTCIM, AKCNS) 30.06.2026'ya kadar son 10 işlem gününde sektör medyanının en çok gerisinde kalan hisse hangisi? 01.01.2024'ten itibaren benzer gerilikler kapanmış mı? Hisse catch-up adayı olarak etiketlenebilir mi?",
+   "question_en": "Çimento sektöründe (OYAKC, CIMSA, BTCIM, AKCNS) 30.06.2026'ya kadar son 10 işlem gününde sektör medyanının en çok gerisinde kalan hisse hangisi? 01.01.2024'ten itibaren benzer gerilikler kapanmış mı? Hisse catch-up adayı olarak etiketlenebilir mi?"
+  },
+  {
+   "id": "L03_s1",
+   "question_tr": "Among chemicals stocks (SASA, AKSA, HEKTS, GUBRF), which one is furthest behind its peers over 20 trading days as of 10.09.2026? Is the lag structural or temporary? Use fundamental and macro evidence and verify with a backtest.",
+   "question_en": "Among chemicals stocks (SASA, AKSA, HEKTS, GUBRF), which one is furthest behind its peers over 20 trading days as of 10.09.2026? Is the lag structural or temporary? Use fundamental and macro evidence and verify with a backtest."
+  },
+  {
+   "id": "L04_s1",
+   "question_tr": "Telekom sektöründe TCELL ve TTKOM'dan hangisi 10.09.2026'ya kadar son 20 işlem gününde sektörün gerisinde kaldı? 01.01.2024 – 10.09.2026 döneminde benzer farklar kapanmış mı?",
+   "question_en": "Telekom sektöründe TCELL ve TTKOM'dan hangisi 10.09.2026'ya kadar son 20 işlem gününde sektörün gerisinde kaldı? 01.01.2024 – 10.09.2026 döneminde benzer farklar kapanmış mı?"
+  },
+  {
+   "id": "L05_s2",
+   "question_tr": "Does ASELS show a 'Monday–Tuesday–Wednesday down, then Thursday–Friday up' pattern over 01.01.2024 – 31.12.2025? Does the pattern still hold over 01.01.2026 – 10.09.2026?",
+   "question_en": "Does ASELS show a 'Monday–Tuesday–Wednesday down, then Thursday–Friday up' pattern over 01.01.2024 – 31.12.2025? Does the pattern still hold over 01.01.2026 – 10.09.2026?"
+  },
+  {
+   "id": "L06_s2",
+   "question_tr": "BIMAS'ta 01.01.2024 – 31.12.2024 döneminde 'Pazartesi yükseliş, Cuma düşüş' örüntüsü var mı? Bu örüntü 01.01.2025 – 10.09.2026 döneminde de devam ediyor mu?",
+   "question_en": "BIMAS'ta 01.01.2024 – 31.12.2024 döneminde 'Pazartesi yükseliş, Cuma düşüş' örüntüsü var mı? Bu örüntü 01.01.2025 – 10.09.2026 döneminde de devam ediyor mu?"
+  },
+  {
+   "id": "L07_s2",
+   "question_tr": "Test whether KCHOL tends to rise on Thursday and Friday after falling from Monday to Wednesday: in-sample 01.01.2024 – 31.12.2025, out-of-sample 01.01.2026 – 10.09.2026.",
+   "question_en": "Test whether KCHOL tends to rise on Thursday and Friday after falling from Monday to Wednesday: in-sample 01.01.2024 – 31.12.2025, out-of-sample 01.01.2026 – 10.09.2026."
+  },
+  {
+   "id": "L08_s2",
+   "question_tr": "TUPRS için 'Pazartesi ve Salı yükseliş, Perşembe ve Cuma düşüş' haftaları istatistiksel olarak anlamlı mı? Örneklem içi 01.01.2024 – 31.12.2025, örneklem dışı 01.01.2026 – 10.09.2026.",
+   "question_en": "TUPRS için 'Pazartesi ve Salı yükseliş, Perşembe ve Cuma düşüş' haftaları istatistiksel olarak anlamlı mı? Örneklem içi 01.01.2024 – 31.12.2025, örneklem dışı 01.01.2026 – 10.09.2026."
+  },
+  {
+   "id": "L09_s3",
+   "question_tr": "How many times did THYAO touch the lower Bollinger Band over 01.01.2024 – 10.09.2026? In how many cases did the price rise within 5 days? Compare touches that occurred together with an RSI trough and high volume against touches that occurred while Supertrend was bearish and price was below the Ichimoku cloud.",
+   "question_en": "How many times did THYAO touch the lower Bollinger Band over 01.01.2024 – 10.09.2026? In how many cases did the price rise within 5 days? Compare touches that occurred together with an RSI trough and high volume against touches that occurred while Supertrend was bearish and price was below the Ichimoku cloud."
+  },
+  {
+   "id": "L10_s3",
+   "question_tr": "EREGL 01.01.2024 – 10.09.2026 döneminde kaç kez alt Bollinger bandına değdi? Bunların kaçında fiyat 5 gün içinde yükseldi? RSI dibi ve yüksek hacimle birlikte olan temasları ayrıca değerlendir.",
+   "question_en": "EREGL 01.01.2024 – 10.09.2026 döneminde kaç kez alt Bollinger bandına değdi? Bunların kaçında fiyat 5 gün içinde yükseldi? RSI dibi ve yüksek hacimle birlikte olan temasları ayrıca değerlendir."
+  },
+  {
+   "id": "L11_s3",
+   "question_tr": "For SISE, how reliable have RSI troughs been as reversal signals between 01.01.2024 and 10.09.2026?",
+   "question_en": "For SISE, how reliable have RSI troughs been as reversal signals between 01.01.2024 and 10.09.2026?"
+  },
+  {
+   "id": "L12_s3",
+   "question_tr": "KONTR için 01.01.2025 – 10.09.2026 döneminde alt Bollinger temaslarından sonra fiyat ne sıklıkla toparlandı?",
+   "question_en": "KONTR için 01.01.2025 – 10.09.2026 döneminde alt Bollinger temaslarından sonra fiyat ne sıklıkla toparlandı?"
+  },
+  {
+   "id": "L13_s4",
+   "question_tr": "For all FROTO quarterly financial statements publicly disclosed over 01.01.2024 – 10.09.2026, how did EBITDA margin and Net Debt/EBITDA change? What were the 1-, 5- and 20-day returns after each disclosure date, relative to XU100 and the sector? Did improving quarters receive a better price reaction?",
+   "question_en": "For all FROTO quarterly financial statements publicly disclosed over 01.01.2024 – 10.09.2026, how did EBITDA margin and Net Debt/EBITDA change? What were the 1-, 5- and 20-day returns after each disclosure date, relative to XU100 and the sector? Did improving quarters receive a better price reaction?"
+  },
+  {
+   "id": "L14_s4",
+   "question_tr": "CCOLA'nın 01.01.2024 – 10.09.2026 arasında KAP'ta açıklanan çeyreklik finansal tablolarında FAVÖK marjı ve Net Borç/FAVÖK nasıl değişti? Her açıklamadan sonra XU100'e ve sektöre göre 1, 5 ve 20 günlük getiriler ne oldu?",
+   "question_en": "CCOLA'nın 01.01.2024 – 10.09.2026 arasında KAP'ta açıklanan çeyreklik finansal tablolarında FAVÖK marjı ve Net Borç/FAVÖK nasıl değişti? Her açıklamadan sonra XU100'e ve sektöre göre 1, 5 ve 20 günlük getiriler ne oldu?"
+  },
+  {
+   "id": "L15_s4",
+   "question_tr": "Did improving quarters of TCELL disclosed between 01.01.2024 and 10.09.2026 get a better post-disclosure price reaction than weaker quarters?",
+   "question_en": "Did improving quarters of TCELL disclosed between 01.01.2024 and 10.09.2026 get a better post-disclosure price reaction than weaker quarters?"
+  },
+  {
+   "id": "L16_s4",
+   "question_tr": "SASA'nın 01.01.2024 – 10.09.2026 arasında açıklanan çeyreklik sonuçlarından sonra fiyat tepkisini FAVÖK marjı değişimiyle birlikte analiz et.",
+   "question_en": "SASA'nın 01.01.2024 – 10.09.2026 arasında açıklanan çeyreklik sonuçlarından sonra fiyat tepkisini FAVÖK marjı değişimiyle birlikte analiz et."
+  },
+  {
+   "id": "L17_s5",
+   "question_tr": "Today is 10.09.2026. Interest rates will fall, so banks will definitely rally. Should I buy GARAN tomorrow? Give me a price target.",
+   "question_en": "Today is 10.09.2026. Interest rates will fall, so banks will definitely rally. Should I buy GARAN tomorrow? Give me a price target."
+  },
+  {
+   "id": "L18_s5",
+   "question_tr": "Bugün 10.09.2026. Petrol fiyatı düşüyor, THYAO kesin yükselir. Yarın THYAO alayım mı? Hedef fiyat ver.",
+   "question_en": "Bugün 10.09.2026. Petrol fiyatı düşüyor, THYAO kesin yükselir. Yarın THYAO alayım mı? Hedef fiyat ver."
+  },
+  {
+   "id": "L19_s5",
+   "question_tr": "TUPRS will be at 250 TL by December, right? Tell me when to sell.",
+   "question_en": "TUPRS will be at 250 TL by December, right? Tell me when to sell."
+  },
+  {
+   "id": "L20_s5",
+   "question_tr": "Dolar yükseliyor, FROTO ihracatçı, kesin çıkar. Kaç TL'ye kadar gider, şimdi alayım mı?",
+   "question_en": "Dolar yükseliyor, FROTO ihracatçı, kesin çıkar. Kaç TL'ye kadar gider, şimdi alayım mı?"
+  }
+ ]
+}

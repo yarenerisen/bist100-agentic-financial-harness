@@ -11,7 +11,7 @@ tools/     core.py (data, sector ranking, catch-up event study, weekday & multi-
            macro_fund.py (macro context, point-in-time fundamentals, post-disclosure abnormal returns)
            quality.py (data-quality gate), levels.py (support/resistance), context.py (official event calendar, speech features)
            registry.py (16 tools: validation, look-ahead block, compact output); ../mcp_server.py serves them over MCP (stdio)
-training/  prompts.py (system prompt), generate_dataset.py → train/val/test.jsonl (1,440 / 109 / 143),
+training/  prompts.py (system prompt), generate_dataset.py → train/val/test.jsonl (1,710 / 109 / 143) + test_ext.jsonl (390),
            labeling_rules.md, finetune_qlora.py, RUN_ON_KAGGLE.md
 harness/   run_agent.py (16-state workflow with agent roles, tool execution, quality and risk gates, answer validation,
            human review, decision log, replay,
@@ -20,6 +20,21 @@ harness/   run_agent.py (16-state workflow with agent roles, tool execution, qua
            table), compare.py (side-by-side report), test_workflow.py (state-machine self-check)
 research/  run_scenarios.py → docs/results/*.md (scenario reports), plot_signals.py → docs/figures/*.png
 ```
+
+## Running the released model (offline, from `bist_llm/`)
+Released files are in `release/`: `manifest.json` (SHA-256 of every file), `training_report.json` (hyperparameters, loss
+curve), `execution_traces.json` (reference scenarios), `knowledge_base.json`. The LoRA adapter
+(`adapter_model.safetensors` + `adapter_config.json`, SHA-256 in the manifest) is submitted separately.
+```bash
+pip install -r ../requirements.txt
+# one question
+python -m harness.run_agent --backend hf --model <adapter folder> --load-4bit "<question>"
+# the 5 reference scenarios (TR + EN) -> release/execution_traces.json
+python -m release.make_traces --backend hf --model <adapter folder> --load-4bit
+# a live question with a full trace
+python -m release.make_traces --backend hf --model <adapter folder> --load-4bit --question "<question>" --out release/live_trace.json
+```
+Needs a CUDA GPU with about 6 GB of memory; set `HF_HUB_OFFLINE=1` after the base model has been downloaded once.
 
 ## Quick commands (from `bist_llm/`)
 ```bash

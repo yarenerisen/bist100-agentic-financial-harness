@@ -1,8 +1,8 @@
 {
  "project": "BIST-Analyst: fine-tuned local LLM orchestrating deterministic financial-analysis tools",
  "repository": "https://github.com/yarenerisen/bist100-agentic-financial-harness",
- "code_commit": "cf9443e2de86a6a1b284709b226117bf6d53c2b4",
- "created_at": "2026-11-27T15:26:41+0300",
+ "code_commit": "094552e094265802243584859b0b3e7e8e16e0d7",
+ "created_at": "2026-11-28T03:25:59+0300",
  "analysis_date": "2026-09-10",
  "base_model": {
   "name": "Qwen/Qwen3.5-4B",
@@ -15,13 +15,13 @@
   "type": "LoRA adapter only",
   "format": "safetensors",
   "adapter": {
-   "path": "bist_llm/runs/qwen35-4b-lora-v4/adapter_model.safetensors",
-   "sha256": "dfd6fcbb94ec7ba8a47e94c22815643ed87d33ce29ef1a9baba88f66dcca478f",
+   "path": "bist_llm/runs/qwen35-4b-lora-v5/adapter_model.safetensors",
+   "sha256": "e2b2f84c71d1035b4a82904a53c49629d1df2d532ba67600f79c2f6eb829a104",
    "bytes": 121951008
   },
   "adapter_config": {
-   "path": "bist_llm/runs/qwen35-4b-lora-v4/adapter_config.json",
-   "sha256": "c2e9a0f463bd92b09feab6aafa48a83e987d632ec5c356fc79e15379571562d7",
+   "path": "bist_llm/runs/qwen35-4b-lora-v5/adapter_config.json",
+   "sha256": "bd789604c34307026aab67b85fe9b0f200d78fa504ac236f9ca7a94ddc4727d4",
    "bytes": 1247
   },
   "lora": {
@@ -29,15 +29,15 @@
    "lora_alpha": 32,
    "lora_dropout": 0.05,
    "target_modules": [
-    "gate_proj",
-    "down_proj",
-    "out_proj",
     "q_proj",
+    "out_proj",
+    "v_proj",
+    "gate_proj",
+    "k_proj",
+    "in_proj_z",
+    "down_proj",
     "o_proj",
     "in_proj_qkv",
-    "v_proj",
-    "in_proj_z",
-    "k_proj",
     "up_proj"
    ],
    "peft_type": "LORA"
@@ -46,9 +46,9 @@
  "fine_tuning": {
   "train": {
    "path": "bist_llm/training/train.jsonl",
-   "sha256": "22871ab1a387aab8154f15f12b65a752f70b92b8d89331c82315fa248b743be5",
-   "bytes": 15912959,
-   "examples": 1560
+   "sha256": "666cbd4fd872a3bec22f88a5eb5b7a2cfe7e71bf82814d899e2ec3ad85bb58e9",
+   "bytes": 16966824,
+   "examples": 1710
   },
   "validation": {
    "path": "bist_llm/training/val.jsonl",
@@ -62,15 +62,22 @@
    "bytes": 1458874,
    "examples": 143
   },
+  "extended_test": {
+   "path": "bist_llm/training/test_ext.jsonl",
+   "sha256": "a974b26e361e0650994febc14f1be4cb7659c3ca61846b0cb59a9933a16881eb",
+   "bytes": 3847963,
+   "examples": 390
+  },
   "config_and_hyperparameters": {
-   "path": "bist_llm/runs/qwen35-4b-lora-v4/training_report.json",
-   "sha256": "d3b0fb8be6a4aa1c35dc36a481ec87f6d22d3e6b88a88ea4c7698ebcc94466dd",
-   "bytes": 5459
+   "path": "bist_llm/runs/qwen35-4b-lora-v5/training_report.json",
+   "sha256": "f55b1da91f95c1382b48e0db4d2807b6990c23bcd75383bd28810e7326f888a2",
+   "bytes": 6007
   },
   "hyperparameters": {
    "method": "QLoRA",
    "quantization": "4-bit NF4, double quantization",
    "compute_dtype": "bf16",
+   "frozen_embedding_dtype": "bf16",
    "lora_rank": 16,
    "lora_alpha": 32,
    "lora_dropout": 0.05,
@@ -98,8 +105,7 @@
    "gradient_checkpointing": true,
    "liger_fused_cross_entropy": true,
    "loss": "assistant tokens only (tool calls and final answers)",
-   "seed": 42,
-   "frozen_embedding_dtype": "bf16"
+   "seed": 42
   },
   "system_prompt": {
    "path": "bist_llm/training/prompts.py",
@@ -108,13 +114,13 @@
   },
   "labeling_rules": {
    "path": "bist_llm/training/labeling_rules.md",
-   "sha256": "8a567c4fd3c57e6e3c402b733411881ef5441db623c7f63d90a63a2b436a2f73",
+   "sha256": "cc8aeaf5ec048e180bd0529d60e28c387ad182b602d2089ec8a95206f2df4a45",
    "bytes": 3614
   },
   "generator": {
    "path": "bist_llm/training/generate_dataset.py",
-   "sha256": "26a1a8a1e08c37252f84819201f2b8af76974ac80d18498b572dd2786fec89e9",
-   "bytes": 77925
+   "sha256": "ca758a3efbab3762983ebad8a98ee56e8237c02dbd65c8177504037666ffd045",
+   "bytes": 81920
   },
   "note": "answers in the training data are rule-based templates filled only with numbers copied from real tool outputs"
  },
@@ -128,8 +134,8 @@
  },
  "execution_traces": {
   "path": "bist_llm/release/execution_traces.json",
-  "sha256": "7281a9c97f8c34236ce2249b9192b5e58e0f09ec77fef07e4c649da8c9afa7bd",
-  "bytes": 323626,
+  "sha256": "071848249531360ca25a3761bd994c28396a8c982a5522e53be3314e0ea87f17",
+  "bytes": 323602,
   "scenarios": 10,
   "summary": [
    {
@@ -143,7 +149,7 @@
      "run_backtest"
     ],
     "answer_valid": true,
-    "latency_s": 45.63
+    "latency_s": 39.31
    },
    {
     "scenario_id": "S1_sector_catch_up_en",
@@ -156,7 +162,7 @@
      "run_backtest"
     ],
     "answer_valid": true,
-    "latency_s": 39.96
+    "latency_s": 37.32
    },
    {
     "scenario_id": "S2_weekday_pattern_tr",
@@ -167,7 +173,7 @@
      "test_weekday_pattern"
     ],
     "answer_valid": true,
-    "latency_s": 32.14
+    "latency_s": 29.95
    },
    {
     "scenario_id": "S2_weekday_pattern_en",
@@ -178,7 +184,7 @@
      "test_weekday_pattern"
     ],
     "answer_valid": true,
-    "latency_s": 28.25
+    "latency_s": 26.38
    },
    {
     "scenario_id": "S3_technical_reversal_tr",
@@ -189,7 +195,7 @@
      "detect_reversal_events"
     ],
     "answer_valid": true,
-    "latency_s": 31.87
+    "latency_s": 29.35
    },
    {
     "scenario_id": "S3_technical_reversal_en",
@@ -200,7 +206,7 @@
      "detect_reversal_events"
     ],
     "answer_valid": true,
-    "latency_s": 28.7
+    "latency_s": 26.22
    },
    {
     "scenario_id": "S4_fundamentals_reaction_tr",
@@ -211,7 +217,7 @@
      "calculate_fundamental_change"
     ],
     "answer_valid": true,
-    "latency_s": 55.4
+    "latency_s": 50.42
    },
    {
     "scenario_id": "S4_fundamentals_reaction_en",
@@ -222,7 +228,7 @@
      "calculate_fundamental_change"
     ],
     "answer_valid": true,
-    "latency_s": 50.12
+    "latency_s": 45.72
    },
    {
     "scenario_id": "S5_rule_safety_tr",
@@ -232,7 +238,7 @@
      "get_macro_context"
     ],
     "answer_valid": true,
-    "latency_s": 20.49
+    "latency_s": 18.53
    },
    {
     "scenario_id": "S5_rule_safety_en",
@@ -242,9 +248,21 @@
      "get_macro_context"
     ],
     "answer_valid": true,
-    "latency_s": 17.84
+    "latency_s": 16.81
    }
   ]
+ },
+ "live_style_check": {
+  "questions": {
+   "path": "bist_llm/release/live_check_questions.json",
+   "sha256": "03a8bc1e76ea32fc9c9268c31a9d7743b81109bfcd2e4f0c9571b24ebd4b0458",
+   "bytes": 8781
+  },
+  "traces": {
+   "path": "bist_llm/release/live_check_traces.json",
+   "sha256": "f93d117e2d1c08088c945c803f343272643ee19077458994368d78526f26393c",
+   "bytes": 601485
+  }
  },
  "source_code": {
   "files": [
@@ -325,8 +343,13 @@
    },
    {
     "path": "bist_llm/release/build_manifest.py",
-    "sha256": "714f1c7a9e1438a3e623d264dce8cab6e3a34e9eafb9cc3c1926abccd56b669b",
-    "bytes": 5749
+    "sha256": "feb8f25049479e550199705a6a934a337aec99362fb25590e168ec97d4be5c9d",
+    "bytes": 6134
+   },
+   {
+    "path": "bist_llm/release/demo.py",
+    "sha256": "85b300092869c7ccb706f41cf715a36c9c99c4532213395c9d7e0d0c7e57d73c",
+    "bytes": 2278
    },
    {
     "path": "bist_llm/release/make_traces.py",
@@ -405,8 +428,8 @@
    },
    {
     "path": "bist_llm/training/generate_dataset.py",
-    "sha256": "26a1a8a1e08c37252f84819201f2b8af76974ac80d18498b572dd2786fec89e9",
-    "bytes": 77925
+    "sha256": "ca758a3efbab3762983ebad8a98ee56e8237c02dbd65c8177504037666ffd045",
+    "bytes": 81920
    },
    {
     "path": "bist_llm/training/prompts.py",
